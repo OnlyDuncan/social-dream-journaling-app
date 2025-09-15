@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String          @id
+  username         String          @unique
+  notes            Note[]
+  sentRequests     FriendRequest[] @relation("SentRequests")
+  receivedRequests FriendRequest[] @relation("ReceivedRequests")
+  favoriteNotes    Note[]          @relation("Favorites")
+  friends          Friend[]        @relation("UserFriends_user")
+  friendedBy       Friend[]        @relation("UserFriends_friend")
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  content     String
+  private     Boolean  @default(false)
+  tags        Tag[]    @relation("NoteTags") // Notes can have many Tags
+  createdAt   DateTime @default(now())
+  favoritedBy User[]   @relation("Favorites")
+}
+
+model FriendRequest {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  status    String
+  createdAt DateTime @default(now())
+  from      User     @relation("SentRequests", fields: [fromId], references: [id])
+  to        User     @relation("ReceivedRequests", fields: [toId], references: [id])
+  @@unique([fromId, toId])
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  notes Note[] @relation("NoteTags")
+}
+
+model Friend {
+  id         String   @id @default(cuid())
+  userId     String
+  friendId   String
+  createdAt  DateTime @default(now())
+  user   User @relation("UserFriends_user", fields: [userId], references: [id])
+  friend User @relation("UserFriends_friend", fields: [friendId], references: [id])
+  @@unique([userId, friendId])
+}
