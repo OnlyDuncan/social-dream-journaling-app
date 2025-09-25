@@ -1,11 +1,12 @@
 "use client";
 
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import ReactMarkdown from 'react-markdown';
 import FavoriteHeart from "../components/HeartButton";
 import UniversalSearch from "../components/UniversalSearch";
+import { Box } from "@mui/material";
 
 type Tag = {
     id: string;
@@ -96,89 +97,120 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
     }
 
    return (
-    <main className="p-4">
-      <SignedOut>
-        <p>You are signed out.</p>
-        <Link href="/sign-in" className="text-blue-600 underline">
-          Sign in
-        </Link>
-      </SignedOut>
+    <main className="">
+        <SignedOut>
+            <RedirectToSignIn />
+        </SignedOut>
 
-      <SignedIn>
-        <UserButton />
-        <div className="mt-4">
-            <UniversalSearch />
-            <div className="mb-6">
-                <div className="bg-pink-900 p-4">
-                    <input
-                    className="border rounded p-2 w-full mb-2"
-                    placeholder="Title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    />
-                </div>
-                <textarea
-                    className="border rounded p-2 w-full mb-2"
-                    placeholder="Content (Markdown supported)"
-                    rows={6}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                />
-                <input
-                    className="border rounded p-2 w-full"
-                    placeholder="Tags (comma separated)"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                />
-                <button
-                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
-                    onClick={handleAddNote}
-                >
-                    Add Note
-                </button>
-            </div>
-            
-            <section>
-                {Array.isArray(notes) && notes.length > 0 ? (
-                    notes.map(({ id, user, title, content, tags }) => (
-                        <article key={id} className="border-b py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold">
-                                    Posted by{" "}
-                                    {user?.username ? (
-                                        <Link href={`/profile/${user.username}`} className="text-blue-600 underline">
-                                            {user.username}
-                                        </Link>
-                                    ) : (
-                                        "Unknown"
-                                    )}
-                                </h2>
-                                <h2 className="text-xl font-semibold">{title}</h2>
-                                <ReactMarkdown>{content}</ReactMarkdown>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
-                                </p>
-                            </div>
-                            <div className="ml-4">
-                                <FavoriteHeart
-                                    isFavorited={favoriteIds.has(id)}
-                                    onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
+        <Box
+            sx={{
+                backgroundColor: "#8E7499",
+                paddingLeft: 2,
+                paddingRight: 2,
+                paddingTop: 2,
+                height: "100%",
+                boxSizing: "border-box",
+            }}
+        >
+            <Box
+                sx={{
+                    background: "linear-gradient(to bottom, #446E99 0%, #172533 69%)",
+                    padding: 4,
+                    height: "100%",
+                    boxSizing: "border-box",
+                    display: "flex",
+                    flexDirection: "column",
+                }}
+            >
+               <SignedIn>
+                    <div className="mt-4">
+                        <UniversalSearch />
+
+                        {/* Display as modal once absolutely positioned button is clicked */}
+                        <div className="mb-6">
+                            <div className="bg-pink-900 p-4">
+                                <input
+                                    className="border rounded p-2 w-full mb-2"
+                                    placeholder="Title"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
                                 />
                             </div>
-                        </article>
-                    ))
-                ) : (
-                    <p>No notes found.</p>
-                )}
-            </section>
-            <Link
-                href="/"
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-                Home
-            </Link>
-        </div>
-      </SignedIn>
+                            <textarea
+                                className="border rounded p-2 w-full mb-2"
+                                placeholder="Content (Markdown supported)"
+                                rows={6}
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                            />
+                            <input
+                                className="border rounded p-2 w-full"
+                                placeholder="Tags (comma separated)"
+                                value={tags}
+                                onChange={(e) => setTags(e.target.value)}
+                            />
+                            <button
+                                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
+                                onClick={handleAddNote}
+                            >
+                                Add Note
+                            </button>
+                        </div>
+
+                        {/* Display Notes */}
+                        <Box 
+                            sx={{ 
+                                marginBottom: 4, 
+                                borderBottom: '2px solid #ccc',
+                                backgroundColor: "#A5D0D0",
+                            }}
+                        >
+                            <section>
+                                {Array.isArray(notes) && notes.length > 0 ? (
+                                    notes.map(({ id, user, title, content, tags }) => (
+                                        <article key={id} className="border-b py-4">
+                                            <div>
+                                                <h2 className="text-xl font-semibold">
+                                                    Posted by{" "}
+                                                    {user?.username ? (
+                                                        <Link href={`/profile/${user.username}`} className="text-blue-600 underline">
+                                                            {user.username}
+                                                        </Link>
+                                                    ) : (
+                                                        "Unknown"
+                                                    )}
+                                                </h2>
+                                                <h2 className="text-xl font-semibold">{title}</h2>
+                                                <ReactMarkdown>{content}</ReactMarkdown>
+                                                <p className="text-sm text-gray-500 mt-2">
+                                                    Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
+                                                </p>
+                                            </div>
+                                            <div className="ml-4">
+                                                <FavoriteHeart
+                                                    isFavorited={favoriteIds.has(id)}
+                                                    onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
+                                                />
+                                            </div>
+                                        </article>
+                                    ))
+                                ) : (
+                                    <p>No notes found.</p>
+                                )}
+                            </section>
+                        </Box>
+
+                        {/* Home Link */}
+                        <Link
+                            href="/"
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                            Home
+                        </Link>
+                    </div>
+                </SignedIn> 
+            </Box>
+        </Box>
     </main>
   );
 }
