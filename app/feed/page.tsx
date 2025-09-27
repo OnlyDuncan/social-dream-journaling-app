@@ -2,215 +2,233 @@
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from 'react-markdown';
 import FavoriteHeart from "../components/HeartButton";
 import UniversalSearch from "../components/UniversalSearch";
 import { Box } from "@mui/material";
+import DreamModal from "../components/DreamModal";
 
-type Tag = {
-    id: string;
-    name: string;
-};
-
+type Tag = { id: string; name: string; };
 type Note = {
-    id: string;
-    user: {
-        username: string;
-    };
-    title: string;
-    content: string;
-    tags: Tag[];
+  id: string;
+  user: { username: string };
+  title: string;
+  content: string;
+  tags: Tag[];
 };
-
 type Favorite = Note;
 
-type FavoritesResponse = {
-    favoriteNotes: Favorite[];
-};
-
 export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: boolean }) {
-    const [notes, setNotes] = useState<Note[]>([]);
-    const [favorites, setFavorites] = useState<Favorite[]>([]);
-    const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [tags, setTags] = useState('');
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [tags, setTags] = useState('');
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
-    useEffect(() => {
-        fetch('/api/feed')
-            .then((res) => res.json())
-            .then((data) => {
-                console.log('Fetched Notes:', data);
-                setNotes(data);
-            });
-    }, []);
+  useEffect(() => {
+    fetch('/api/feed')
+      .then(r => r.json())
+      .then(d => setNotes(d));
+  }, []);
 
-    useEffect(() => {
-        async function fetchMyFavorites() {
-            const res = await fetch("/api/favorites");
-            if (res.ok) {
-                const data = await res.json();
-                setFavoriteIds(new Set(data.map((fav: Favorite) => fav.id)));
-            }
-        }
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/api/favorites");
+      if (res.ok) {
+        const data = await res.json();
+        setFavoriteIds(new Set(data.map((fav: Favorite) => fav.id)));
+      }
+    })();
+  }, []);
 
-        fetchMyFavorites();
-    }, []);
-
-    async function toggleFavorite(noteId: string, currentlyFavorited: boolean) {
-        try {
-            const res = await fetch("/api/favorites", {
-                method: currentlyFavorited ? "DELETE" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ noteId }),
-            });
-
-            if (!res.ok) {
-                throw new Error("Failed to update favorite");
-            }
-
-            const updatedFavorites: Favorite[] = await res.json();
-            setFavorites(updatedFavorites);
-            setFavoriteIds(new Set(updatedFavorites.map(fav => fav.id)));
-        } catch (error) {
-            console.error(error);
-        }
+  async function toggleFavorite(noteId: string, currentlyFavorited: boolean) {
+    try {
+      const res = await fetch("/api/favorites", {
+        method: currentlyFavorited ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ noteId }),
+      });
+      if (!res.ok) return;
+      const updated: Favorite[] = await res.json();
+      setFavoriteIds(new Set(updated.map(f => f.id)));
+    } catch (e) {
+      console.error(e);
     }
+  }
 
-    async function handleAddNote() {
-        const tagsArray = tags.split(',').map((t) => t.trim()).filter(Boolean)
-
-        const res = await fetch('/api/notes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, content, tags: tagsArray }),
-        })
-
-        if (res.ok) {
-            const newNote = await res.json()
-            setNotes((prev) => [...prev, newNote])
-            setTitle('')
-            setContent('')
-            setTags('')
-        }
+  async function handleAddNote() {
+    const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+    const res = await fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content, tags: tagsArray }),
+    });
+    if (res.ok) {
+      const newNote = await res.json();
+      setNotes(prev => [...prev, newNote]);
+      setTitle(''); setContent(''); setTags('');
     }
+  }
 
-   return (
-    <main className="">
-        <SignedOut>
-            <RedirectToSignIn />
-        </SignedOut>
+  const positionKey = useMemo(() => notes.map(n => n.id).join('|'), [notes]);
 
-        <Box
-            sx={{
-                backgroundColor: "#8E7499",
-                paddingLeft: 2,
-                paddingRight: 2,
-                paddingTop: 2,
-                height: "100%",
-                boxSizing: "border-box",
-            }}
-        >
-            <Box
+  const positions = useMemo(() => {
+    // Generate one random position per note (stable until notes list changes)
+    const arr = notes.map(n => {
+      return {
+        id: n.id,
+        top: 5 + Math.random() * 80,     // percentages
+        left: 5 + Math.random() * 80,
+        rotate: (Math.random() - 0.5) * 14,
+        z: Math.floor(Math.random() * 100),
+      };
+    });
+    return arr;
+    // Only regenerate when the set of IDs changes
+  }, [positionKey]);
+
+  // Helper to lookup position by note id
+  function getPos(id: string) {
+    return positions.find(p => p.id === id)!;
+  }
+
+  return (
+    <main>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+
+      <Box sx={{ backgroundColor: "#8E7499", px: 2, pt: 2, height: "100%", boxSizing: "border-box" }}>
+        <Box sx={{
+          background: "linear-gradient(to bottom, #446E99 0%, #172533 69%)",
+          p: 4,
+          minHeight: "100vh",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          <SignedIn>
+            <div className="mt-4">
+              <UniversalSearch />
+
+              <div className="mb-6">
+                <div className="bg-pink-900 p-4">
+                  <input
+                    className="border rounded p-2 w-full mb-2"
+                    placeholder="Title"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                  />
+                </div>
+                <textarea
+                  className="border rounded p-2 w-full mb-2"
+                  placeholder="Content (Markdown supported)"
+                  rows={6}
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                />
+                <input
+                  className="border rounded p-2 w-full"
+                  placeholder="Tags (comma separated)"
+                  value={tags}
+                  onChange={e => setTags(e.target.value)}
+                />
+                <button
+                  className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
+                  onClick={handleAddNote}
+                >
+                  Add Note
+                </button>
+              </div>
+
+              {/* Single scatter container (random each render) */}
+              <Box
                 sx={{
-                    background: "linear-gradient(to bottom, #446E99 0%, #172533 69%)",
-                    padding: 4,
-                    height: "100%",
-                    boxSizing: "border-box",
-                    display: "flex",
-                    flexDirection: "column",
+                  position: 'relative',
+                  height: 1000,
+                  backgroundColor: "#A5D0D0",
+                  mb: 4,
+                  overflow: 'hidden',
+                  border: '2px solid #ccc'
                 }}
-            >
-               <SignedIn>
-                    <div className="mt-4">
-                        <UniversalSearch />
-
-                        {/* Display as modal once absolutely positioned button is clicked */}
-                        <div className="mb-6">
-                            <div className="bg-pink-900 p-4">
-                                <input
-                                    className="border rounded p-2 w-full mb-2"
-                                    placeholder="Title"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                />
-                            </div>
-                            <textarea
-                                className="border rounded p-2 w-full mb-2"
-                                placeholder="Content (Markdown supported)"
-                                rows={6}
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                            />
-                            <input
-                                className="border rounded p-2 w-full"
-                                placeholder="Tags (comma separated)"
-                                value={tags}
-                                onChange={(e) => setTags(e.target.value)}
-                            />
-                            <button
-                                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
-                                onClick={handleAddNote}
-                            >
-                                Add Note
-                            </button>
+              >
+                {notes.length > 0 ? (
+                  notes.map(note => {
+                    const { top, left, rotate, z } = getPos(note.id);
+                    return (
+                      <div
+                        key={note.id}
+                        style={{
+                          position: 'absolute',
+                          top: `${top}%`,
+                          left: `${left}%`,
+                          width: 240,
+                          maxHeight: 320,
+                          padding: '12px 14px',
+                          background: '#ffffffee',
+                          borderRadius: 12,
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.25)',
+                          transform: `rotate(${rotate}deg)`,
+                          zIndex: z,
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          backdropFilter: 'blur(2px)',
+                          transition: 'box-shadow 0.2s',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.35)')}
+                        onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.25)')}
+                        onClick={() => setSelectedNote(note)}
+                      >
+                        <h3 className="font-bold mb-1">{note.title}</h3>
+                        <h2 className="text-sm text-gray-600 mb-2">By {note.user?.username || 'Unknown'}</h2>
+                        <div className="prose prose-sm max-w-none flex-1 overflow-auto mb-2">
+                          <ReactMarkdown>
+                            {note.content.length > 220 ? note.content.slice(0, 220) + '…' : note.content}
+                          </ReactMarkdown>
                         </div>
+                        <p className="text-[10px] text-gray-600">
+                          Tags: {note.tags?.length ? note.tags.map(t => t.name).join(', ') : 'No Tags'}
+                        </p>
+                        <div className="mt-1">
+                          <FavoriteHeart
+                            isFavorited={favoriteIds.has(note.id)}
+                            onToggle={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p style={{ padding: 16 }}>No notes found.</p>
+                )}
 
-                        {/* Display Notes */}
-                        <Box 
-                            sx={{ 
-                                marginBottom: 4, 
-                                borderBottom: '2px solid #ccc',
-                                backgroundColor: "#A5D0D0",
-                            }}
-                        >
-                            <section>
-                                {Array.isArray(notes) && notes.length > 0 ? (
-                                    notes.map(({ id, user, title, content, tags }) => (
-                                        <article key={id} className="border-b py-4">
-                                            <div>
-                                                <h2 className="text-xl font-semibold">
-                                                    Posted by{" "}
-                                                    {user?.username ? (
-                                                        <Link href={`/profile/${user.username}`} className="text-blue-600 underline">
-                                                            {user.username}
-                                                        </Link>
-                                                    ) : (
-                                                        "Unknown"
-                                                    )}
-                                                </h2>
-                                                <h2 className="text-xl font-semibold">{title}</h2>
-                                                <ReactMarkdown>{content}</ReactMarkdown>
-                                                <p className="text-sm text-gray-500 mt-2">
-                                                    Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
-                                                </p>
-                                            </div>
-                                            <div className="ml-4">
-                                                <FavoriteHeart
-                                                    isFavorited={favoriteIds.has(id)}
-                                                    onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
-                                                />
-                                            </div>
-                                        </article>
-                                    ))
-                                ) : (
-                                    <p>No notes found.</p>
-                                )}
-                            </section>
-                        </Box>
+              </Box>
+            
+              {selectedNote && (
+                  <DreamModal
+                    isOpen={true}
+                    onClose={() => setSelectedNote(null)}
+                    title={selectedNote.title}
+                    content={selectedNote.content}
+                    tags={selectedNote.tags.map(t => t.name)}
+                    author={selectedNote.user?.username}
+                />
+            )}
 
-                        {/* Home Link */}
-                        <Link
-                            href="/"
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                            Home
-                        </Link>
-                    </div>
-                </SignedIn> 
-            </Box>
+              <Link
+                href="/"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Home
+              </Link>
+            </div>
+          </SignedIn>
         </Box>
+      </Box>
     </main>
   );
 }
