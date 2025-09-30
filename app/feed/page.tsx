@@ -8,6 +8,7 @@ import FavoriteHeart from "../components/HeartButton";
 import UniversalSearch from "../components/UniversalSearch";
 import { Box } from "@mui/material";
 import DreamModal from "../components/DreamModal";
+import CreateDreamModal from "../components/CreateDreamModal";
 
 type Tag = { id: string; name: string; };
 type Note = {
@@ -22,10 +23,8 @@ type Favorite = Note;
 export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: boolean }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [showCreate, setShowCreate] = useState(false); // controls create modal/form
 
   useEffect(() => {
     fetch('/api/feed')
@@ -55,20 +54,6 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
       setFavoriteIds(new Set(updated.map(f => f.id)));
     } catch (e) {
       console.error(e);
-    }
-  }
-
-  async function handleAddNote() {
-    const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
-    const res = await fetch('/api/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, tags: tagsArray }),
-    });
-    if (res.ok) {
-      const newNote = await res.json();
-      setNotes(prev => [...prev, newNote]);
-      setTitle(''); setContent(''); setTags('');
     }
   }
 
@@ -112,36 +97,6 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
           <SignedIn>
             <div className="mt-4">
               <UniversalSearch />
-
-              <div className="mb-6">
-                <div className="bg-pink-900 p-4">
-                  <input
-                    className="border rounded p-2 w-full mb-2"
-                    placeholder="Title"
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                  />
-                </div>
-                <textarea
-                  className="border rounded p-2 w-full mb-2"
-                  placeholder="Content (Markdown supported)"
-                  rows={6}
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                />
-                <input
-                  className="border rounded p-2 w-full"
-                  placeholder="Tags (comma separated)"
-                  value={tags}
-                  onChange={e => setTags(e.target.value)}
-                />
-                <button
-                  className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
-                  onClick={handleAddNote}
-                >
-                  Add Note
-                </button>
-              </div>
 
               {/* Single scatter container (random each render) */}
               <Box
@@ -229,6 +184,24 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
           </SignedIn>
         </Box>
       </Box>
+
+      {/* Floating Action Button (bottom-left) */}
+      <button
+        type="button"
+        aria-label="Create Dream"
+        onClick={() => setShowCreate(true)}
+        className="fixed bottom-10 right-16 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-pink-600 hover:bg-pink-500 active:bg-pink-700 text-white text-3xl font-semibold shadow-lg shadow-pink-900/40 transition-colors focus:outline-none focus:ring-4 focus:ring-pink-300"
+      >
+        +
+      </button>
+
+      {showCreate && (
+        <CreateDreamModal
+          isOpen={showCreate}
+          onClose={() => setShowCreate(false)}
+          onDreamCreated={note => setNotes(prev => [...prev, note])}
+        />
+      )}
     </main>
   );
 }

@@ -16,7 +16,6 @@ export default function HomePage() {
           paddingTop: 2,
           height: "100vh",
           boxSizing: "border-box",
-          // 100% #A5D0D0
         }}
       >
         <Box

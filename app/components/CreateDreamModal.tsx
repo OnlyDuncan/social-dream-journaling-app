@@ -2,41 +2,74 @@
 
 import { ReactNode, useState } from "react";
 
-type DreamModalProps = {
+type CreateDreamModalProps = {
     isOpen: boolean;
     onClose: () => void;
-    title: string;
-    content: string;
-    tags: string[];
-    author?: string;
+    onDreamCreated: (note: any) => void;
 };
 
 export default function CreateDreamModal({ 
     isOpen, 
     onClose, 
-    title, 
-    content, 
-    tags, 
-    author 
-}: DreamModalProps) {
+    onDreamCreated 
+}: CreateDreamModalProps) {
     if (!isOpen) return null;
 
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [tags, setTags] = useState('');
+
+    async function handleCreateDream() {
+        const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+
+        const res = await fetch('/api/notes', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, content, tags: tagsArray }),
+        });
+        if (res.ok) {
+            const newDream = await res.json();
+            onDreamCreated(newDream);
+            setTitle("");
+            setContent("");
+            setTags("");
+            onClose();
+        }
+    }
+
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-            <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-lg">
-                <h2 className="text-xl font-bold mb-2">{title}</h2>
-                {author && <p className="text-sm text-gray-600 mb-4">By {author}</p>}
-                <p className="text-gray-800 whitespace-pre-line">{content}</p>
-                {tags.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-4">
-                        Tags: {tags.join(", ")}
-                    </p>
-                )}
+        <div className="mb-6 z-50 fixed inset-0 flex flex-col items-center justify-center bg-black/50 p-4" style={{ zIndex: 2001 }}>
+            <div className="bg-pink-900 p-4">
+                <input
+                    className="border rounded p-2 w-full mb-2"
+                    placeholder="Title"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                />
+            </div>
+            <textarea
+                className="border rounded p-2 w-full mb-2"
+                placeholder="Content (Markdown supported)"
+                rows={6}
+                value={content}
+                onChange={e => setContent(e.target.value)}
+            />
+            <input
+                className="border rounded p-2 w-full"
+                placeholder="Tags (comma separated)"
+                value={tags}
+                onChange={e => setTags(e.target.value)}
+            />
+
+            <div className="flex justify-end space-x-2">
+                <button className="px-4 py-2 bg-gray-300 rounded" onClick={onClose}>
+                    Cancel
+                </button>
                 <button
-                    onClick={onClose}
-                    className="mt-4 px-4 py-2 bg-gray-700 text-white rounded"
+                    className="px-4 py-2 bg-blue-600 text-white rounded"
+                    onClick={handleCreateDream}
                 >
-                    Close
+                    Create Dream
                 </button>
             </div>
         </div>
