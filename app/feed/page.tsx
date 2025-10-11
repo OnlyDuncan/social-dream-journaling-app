@@ -1,11 +1,19 @@
 "use client";
 
+// Make sure Dreams don't cover anything important
+// Make it so Dreams populate as card through search
+// Make it so hearting a Dream does not trigger the modal, and add heart to modal of Dream
+// Make it so that clicking on the username of a user in the modal takes you to that user's page
+// Add private option to Dream creation modal
+// Lots of stylization changes
+
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from 'react-markdown';
 import FavoriteHeart from "../components/HeartButton";
-import UniversalSearch from "../components/UniversalSearch";
+import UniversalUserSearch from "../components/UniversalUserSearch";
+import UniversalDreamSearch from "../components/UniversalDreamSearch";
 import { Box } from "@mui/material";
 import DreamModal from "../components/DreamModal";
 import CreateDreamModal from "../components/CreateDreamModal";
@@ -96,7 +104,7 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
         }}>
           <SignedIn>
             <div className="mt-4">
-              <UniversalSearch />
+              <UniversalUserSearch />
 
               {/* Single scatter container (random each render) */}
               <Box
@@ -109,6 +117,8 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
                   border: '2px solid #ccc'
                 }}
               >
+                <UniversalDreamSearch />
+                <br />
                 {notes.length > 0 ? (
                   notes.map(note => {
                     const { top, left, rotate, z } = getPos(note.id);

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 
 interface SearchResult {
-  users?: Array<{ id: string; username: string }>;
   notes?: Array<{
     id: string;
     title: string;
@@ -45,13 +44,6 @@ export default function UniversalSearch() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search users or content..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
-        />
         
         <input
           type="text"
@@ -60,39 +52,6 @@ export default function UniversalSearch() {
           onChange={(e) => setTags(e.target.value)}
           className="w-full p-2 border rounded mb-2"
         />
-
-        <div className="flex gap-2 mb-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="users"
-              checked={searchType === 'users'}
-              onChange={(e) => setSearchType(e.target.value as any)}
-              className="mr-1"
-            />
-            Users
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="notes"
-              checked={searchType === 'notes'}
-              onChange={(e) => setSearchType(e.target.value as any)}
-              className="mr-1"
-            />
-            Dreams
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="both"
-              checked={searchType === 'both'}
-              onChange={(e) => setSearchType(e.target.value as any)}
-              className="mr-1"
-            />
-            Both
-          </label>
-        </div>
 
         <button
           onClick={handleSearch}
@@ -104,19 +63,6 @@ export default function UniversalSearch() {
       </div>
 
       <div>
-        {results.users && results.users.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Users</h3>
-            {results.users.map(user => (
-              <div key={user.id} className="p-2 border-b">
-                <a href={`/profile/${user.username}`} className="text-blue-600 hover:underline">
-                  @{user.username}
-                </a>
-              </div>
-            ))}
-          </div>
-        )}
-
         {results.notes && results.notes.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-2">Dreams</h3>

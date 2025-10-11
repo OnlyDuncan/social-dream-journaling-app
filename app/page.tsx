@@ -1,5 +1,10 @@
 "use client";
 
+// Stylization changes to landing page
+// Change all instances of "notes" to "dreams" in the codebase
+// Add loading screen / spinners / bars
+// Get it to be responsive on other devices
+
 import { SignedIn, SignedOut, SignOutButton, SignInButton } from "@clerk/nextjs";
 import Link from "next/link";
 import React from "react";

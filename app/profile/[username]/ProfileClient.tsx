@@ -1,11 +1,19 @@
 "use client";
 
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+// Make received requests section and notification not appear unless you have a received request
+// Make it so that dreams are contained in cards and when you select one it pops up as a modal
+// Add private option to Dream creation modal
+// Lots of stylization changes
+
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import FavoriteHeart from "../../components/HeartButton";
 import ReactMarkdown from "react-markdown";
+import { Box } from "@mui/material";
+import DreamModal from "../../components/DreamModal";
+import CreateDreamModal from "../../components/CreateDreamModal";
 
 type Tag = {
   id: string;
@@ -54,6 +62,8 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
   const isFriend = !isOwnProfile && Array.isArray(friends) && friends.some((f: any) => f.id === loggedInUserId);
   const hasSentRequest = Array.isArray(sentRequests) && sentRequests.some((r: any) => r.to?.id === profileUserId);
   const hasReceivedRequest = Array.isArray(receivedRequests) && receivedRequests.some((r: any) => r.from?.id === profileUserId);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   let buttonLabel = "Add Friend";
   let disabled = false;
@@ -215,211 +225,204 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }
 
-  async function handleAddNote() {
-    const tagsArray = tags.split(",").map((t) => t.trim()).filter(Boolean);
-
-    const res = await fetch("/api/notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content, tags: tagsArray, private: privateNote }),
-    });
-
-    if (res.ok) {
-      const newNote = await res.json();
-      setNotes((prev) => [{ ...newNote, isPrivate: newNote.isPrivate ?? newNote.private ?? privateNote }, ...prev]);
-      setTitle("");
-      setContent("");
-      setTags("");
-      setPrivateNote(false);
-    }
-  }
-
   return (
 
-    <main className="p-4">
+    <main>
       <SignedOut>
-        <p>You are signed out.</p>
-        <Link href="/sign-in" className="text-blue-600 underline">
-          Sign in
-        </Link>
+        <RedirectToSignIn />
       </SignedOut>
 
-      <SignedIn>
-        <UserButton />
-        <div className="mt-4">
+      <Box sx={{ backgroundColor: "#8E7499", px: 2, pt: 2, height: "100%", boxSizing: "border-box" }}>
+        <Box sx={{
+          background: "linear-gradient(to bottom, #446E99 0%, #172533 69%)",
+          p: 4,
+          minHeight: "100vh",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+        }}>
+          <SignedIn>
+            <div className="mt-4">
+              {/* <UniversalSearch /> */}
 
-          {isOwnProfile && (
-            <div className="mb-6">
-              <div className="bg-pink-900 p-4">
-                <input
-                  className="border rounded p-2 w-full mb-2"
-                  placeholder="Title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <textarea
-                className="border rounded p-2 w-full mb-2"
-                placeholder="Content (Markdown supported)"
-                rows={6}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-              <input
-                className="border rounded p-2 w-full"
-                placeholder="Tags (comma separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-              />
-              <div className="flex items-center mt-2">
-                <input
-                  id="private"
-                  type="checkbox"
-                  checked={privateNote}
-                  onChange={(e) => setPrivateNote(e.target.checked)}
-                  className="mr-2"
-                />
-                <label htmlFor="private">Private Note</label>
-              </div>
-              <button
-                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
-                onClick={handleAddNote}
+              <Box
+                sx={{
+                  position: "relative",
+                  height: 1000,
+                  backgroundColor: "#A5D0D0",
+                  mb: 4,
+                  overflow: "hidden",
+                  border: '2px solid #ccc',
+                }}
               >
-                Add Note
-              </button>
-            </div>
-          )}
+                <div className="mt-4">
 
-          {isOwnProfile && (
-            <button
-              onClick={() => setShowPrivate(prev => !prev)}
-              className="mb-4 px-4 py-2 bg-purple-600 text-white rounded"
-            >
-              {showPrivate ? "Show Public Notes" : "Show Private Notes"}
-            </button>
-          )}
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => setShowPrivate(prev => !prev)}
+                      className="mb-4 px-4 py-2 bg-purple-600 text-white rounded"
+                    >
+                      {showPrivate ? "Show Public Notes" : "Show Private Notes"}
+                    </button>
+                  )}
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Dreams" : `${user.username}'s Dreams`}</h2>
-            
-            {(() => {
-              const visibleNotes = notes.filter(note => {
-                if (isOwnProfile) {
-                  return showPrivate ? note.isPrivate : !note.isPrivate;
-                } else {
-                  return !note.isPrivate;
-                }
-              });
+                  <section className="mb-8">
+                    <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Dreams" : `${user.username}'s Dreams`}</h2>
 
-              if (visibleNotes.length === 0) {
-                return <p>No notes found.</p>;
-              }
+                    {(() => {
+                      const visibleNotes = notes.filter(note => {
+                        if (isOwnProfile) {
+                          return showPrivate ? note.isPrivate : !note.isPrivate;
+                        } else {
+                          return !note.isPrivate;
+                        }
+                      });
 
-              return visibleNotes.map(({ id, user, title, content, tags, isPrivate }) => (
-                <article key={id} className="border-b py-4">
-                  <div>
-                    <h2 className="text-xl font-semibold">Posted by {user?.username || "Unknown"}</h2>
-                    <h2 className="text-xl font-semibold">{title}</h2>
-                    <ReactMarkdown>{content}</ReactMarkdown>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
-                    </p>
-                    <div>
-                      {!isPrivate && (
-                        <FavoriteHeart
-                          isFavorited={favoriteIds.has(id)}
-                          onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
-                        />
+                      if (visibleNotes.length === 0) {
+                        return <p>No notes found.</p>;
+                      }
+
+                      return visibleNotes.map(({ id, user, title, content, tags, isPrivate }) => (
+                        <article key={id} className="border-b py-4">
+                          <div>
+                            <h2 className="text-xl font-semibold">Posted by {user?.username || "Unknown"}</h2>
+                            <h2 className="text-xl font-semibold">{title}</h2>
+                            <ReactMarkdown>{content}</ReactMarkdown>
+                            <p className="text-sm text-gray-500 mt-2">
+                              Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
+                            </p>
+                            <div>
+                              {!isPrivate && (
+                                <FavoriteHeart
+                                  isFavorited={favoriteIds.has(id)}
+                                  onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </article>
+                      ))
+                    })()}
+                  </section>
+
+                  <section className="mb-8">
+                    <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Favorite Dreams" : `${user.username}'s Favorite Dreams`}</h2>
+
+                    {Array.isArray(favorites) && favorites.length > 0 ? (
+                      favorites.map(({ id, user, title, content, tags }) => (
+                        <article key={id} className="border-b py-4 flex justify-between items-start">
+                          <div>
+                            <h2 className="text-xl font-semibold">Posted by {user?.username || "Unknown"}</h2>
+                            <h2 className="text-xl font-semibold">{title}</h2>
+                            <ReactMarkdown>{content}</ReactMarkdown>
+                            <p className="text-sm text-gray-500 mt-2">
+                              Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
+                            </p>
+                          </div>
+                          <div className="mr-4">
+
+                            {(isOwnProfile &&
+                              <FavoriteHeart
+                                isFavorited={favoriteIds.has(id)}
+                                onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
+                              />
+                            )}
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <p>No favorite notes found.</p>
+                    )}
+                  </section>
+
+                  {isOwnProfile && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold">Received</h3>
+                      {Array.isArray(receivedRequests) && receivedRequests.length > 0 ? (
+                        receivedRequests.map(({ id, from }) => (
+                          <article key={id as string} className="border-b py-4">
+                            <h2 className="text-xl font-semibold">From: {from?.username || "Unknown"}</h2>
+                            <button onClick={() => handleFriendRequestAccept(from?.id as string, id as string)} className="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
+                              Accept Request
+                            </button>
+                            <button onClick={() => handleFriendRequestReject(from?.id as string, id as string)} className="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
+                              Reject Request
+                            </button>
+                          </article>
+                        ))
+                      ) : (
+                        <p>No friend requests found.</p>
                       )}
                     </div>
-                  </div>
-                </article>
-              ))
-            })()}
-          </section>
+                  )}
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Favorite Dreams" : `${user.username}'s Favorite Dreams`}</h2>
-
-            {Array.isArray(favorites) && favorites.length > 0 ? (
-              favorites.map(({ id, user, title, content, tags }) => (
-                <article key={id} className="border-b py-4 flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-semibold">Posted by {user?.username || "Unknown"}</h2>
-                    <h2 className="text-xl font-semibold">{title}</h2>
-                    <ReactMarkdown>{content}</ReactMarkdown>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
-                    </p>
-                  </div>
-                  <div className="ml-4">
-
-                    {(isOwnProfile &&
-                      <FavoriteHeart
-                        isFavorited={favoriteIds.has(id)}
-                        onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
-                      />
+                  <section className="mb-8">
+                    <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Friends" : `${user.username}'s Friends`}</h2>
+                    {Array.isArray(friends) && friends.length > 0 ? (
+                      friends.map(({ id, username }) => (
+                        <article key={id} className="border-b py-4">
+                          <h2 className="text-xl font-semibold">Friend: {username || "Unknown"}</h2>
+                        </article>
+                      ))
+                    ) : (
+                      <p>No friends found.</p>
                     )}
-                  </div>
-                </article>
-              ))
-            ) : (
-              <p>No favorite notes found.</p>
-            )}
-          </section>
-          
-          {isOwnProfile && (
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold">Received</h3>
-              {Array.isArray(receivedRequests) && receivedRequests.length > 0 ? (
-                receivedRequests.map(({ id, from }) => (
-                  <article key={id as string} className="border-b py-4">
-                    <h2 className="text-xl font-semibold">From: {from?.username || "Unknown"}</h2>
-                    <button onClick={() => handleFriendRequestAccept(from?.id as string, id as string)} className="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
-                      Accept Request
+                  </section>
+
+                  {!isOwnProfile && (
+                    <button
+                      onClick={() => handleFriend()}
+                      disabled={disabled}
+                      className={`mb-4 px-4 py-2 rounded text-white ${ disabled ? "bg-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
+                    >
+                      {buttonLabel}
                     </button>
-                    <button onClick={() => handleFriendRequestReject(from?.id as string, id as string)} className="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
-                      Reject Request
-                    </button>
-                  </article>
-                ))
-              ) : (
-                <p>No friend requests received.</p>
-              )}
+                  )}
+
+                  {selectedNote && (
+                    <DreamModal
+                      isOpen={true}
+                      onClose={() => setSelectedNote(null)}
+                      title={selectedNote.title}
+                      content={selectedNote.content}
+                      tags={selectedNote.tags.map(t => t.name)}
+                      author={selectedNote.user?.username}
+                    />
+                  )}
+
+                  <Link
+                    href="/"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Home
+                  </Link>
+                </div>
+              </Box>
             </div>
-          )}
+          </SignedIn>
+        </Box>
+      </Box>
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Friends" : `${user.username}'s Friends`}</h2>
-            {Array.isArray(friends) && friends.length > 0 ? (
-              friends.map(({ id, username }) => (
-                <article key={id} className="border-b py-4">
-                  <h2 className="text-xl font-semibold">Friend: {username || "Unknown"}</h2>
-                </article>
-              ))
-            ) : (
-              <p>No friends found.</p>
-            )}
-          </section>
-
-          {!isOwnProfile && (
-            <button
-              onClick={() => handleFriend()}
-              disabled={disabled}
-              className={`mb-4 px-4 py-2 rounded text-white ${ disabled ? "bg-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
-            >
-              {buttonLabel}
-            </button>
-          )}
-          
-          <Link
-            href="/"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      {isOwnProfile && (
+        <>
+          <button
+            type="button"
+            aria-label="Create Dream"
+            onClick={() => setShowCreate(true)}
+            className="fixed bottom-10 right-16 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-pink-600 hover:bg-pink-500 active:bg-pink-700 text-white text-3xl font-semibold shadow-lg shadow-pink-900/40 transition-colors focus:outline-none focus:ring-4 focus:ring-pink-300"
           >
-            Home
-          </Link>
-        </div>
-      </SignedIn>
+            +
+          </button>
+
+          {showCreate && (
+            <CreateDreamModal
+              isOpen={showCreate}
+              onClose={() => setShowCreate(false)}
+              onDreamCreated={note => setNotes(prev => [...prev, note])}
+            />
+          )}
+        </>
+      )}
     </main>
   );
 }
