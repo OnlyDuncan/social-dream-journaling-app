@@ -1,22 +1,21 @@
 "use client";
 
 // Make sure Dreams don't cover anything important
-// Make it so Dreams populate as card through search
 // Make it so hearting a Dream does not trigger the modal, and add heart to modal of Dream
 // Make it so that clicking on the username of a user in the modal takes you to that user's page
 // Add private option to Dream creation modal
-// Lots of stylization changes
+// After styling make functional on mobile devices
+// Add swipe gestures for mobile
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
-import ReactMarkdown from 'react-markdown';
-import FavoriteHeart from "../components/HeartButton";
 import UniversalUserSearch from "../components/UniversalUserSearch";
 import UniversalDreamSearch from "../components/UniversalDreamSearch";
 import { Box } from "@mui/material";
 import DreamModal from "../components/DreamModal";
 import CreateDreamModal from "../components/CreateDreamModal";
+import DreamCard from "../components/DreamCard";
 
 type Tag = { id: string; name: string; };
 type Note = {
@@ -33,6 +32,7 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showCreate, setShowCreate] = useState(false); // controls create modal/form
+  const [hasSearchResults, setHasSearchResults] = useState(false);
 
   useEffect(() => {
     fetch('/api/feed')
@@ -106,83 +106,61 @@ export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: 
             <div className="mt-4">
               <UniversalUserSearch />
 
-              {/* Single scatter container (random each render) */}
-              <Box
-                sx={{
-                  position: 'relative',
-                  height: 1000,
-                  backgroundColor: "#A5D0D0",
-                  mb: 4,
-                  overflow: 'hidden',
-                  border: '2px solid #ccc'
-                }}
-              >
-                <UniversalDreamSearch />
-                <br />
-                {notes.length > 0 ? (
-                  notes.map(note => {
-                    const { top, left, rotate, z } = getPos(note.id);
-                    return (
-                      <div
-                        key={note.id}
-                        style={{
-                          position: 'absolute',
-                          top: `${top}%`,
-                          left: `${left}%`,
-                          width: 240,
-                          maxHeight: 320,
-                          padding: '12px 14px',
-                          background: '#ffffffee',
-                          borderRadius: 12,
-                          boxShadow: '0 4px 10px rgba(0,0,0,0.25)',
-                          transform: `rotate(${rotate}deg)`,
-                          zIndex: z,
-                          overflow: 'hidden',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          backdropFilter: 'blur(2px)',
-                          transition: 'box-shadow 0.2s',
-                          cursor: 'pointer'
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.35)')}
-                        onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.25)')}
-                        onClick={() => setSelectedNote(note)}
-                      >
-                        <h3 className="font-bold mb-1">{note.title}</h3>
-                        <h2 className="text-sm text-gray-600 mb-2">By {note.user?.username || 'Unknown'}</h2>
-                        <div className="prose prose-sm max-w-none flex-1 overflow-auto mb-2">
-                          <ReactMarkdown>
-                            {note.content.length > 220 ? note.content.slice(0, 220) + '…' : note.content}
-                          </ReactMarkdown>
-                        </div>
-                        <p className="text-[10px] text-gray-600">
-                          Tags: {note.tags?.length ? note.tags.map(t => t.name).join(', ') : 'No Tags'}
-                        </p>
-                        <div className="mt-1">
-                          <FavoriteHeart
-                            isFavorited={favoriteIds.has(note.id)}
-                            onToggle={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p style={{ padding: 16 }}>No notes found.</p>
-                )}
+              {/* Pass callback to search component */}
+              <UniversalDreamSearch 
+                onSearchStateChange={setHasSearchResults}
+              />
 
-              </Box>
-            
+              {/* Only show main feed if no search results */}
+              {!hasSearchResults && (
+                <Box
+                  sx={{
+                    position: 'relative',
+                    height: 1000,
+                    backgroundColor: "#A5D0D0",
+                    mb: 4,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    border: '2px solid #ccc'
+                  }}
+                >
+                  <br />
+                  {notes.length > 0 ? (
+                    notes.map(note => {
+                      const { top, left, rotate, z } = getPos(note.id);
+                      return (
+                        <DreamCard
+                          key={note.id}
+                          dream={note}
+                          isFavorited={favoriteIds.has(note.id)}
+                          onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                          onOpen={() => setSelectedNote(note)}
+                          style={{
+                            position: "absolute",
+                            top: `${top}%`,
+                            left: `${left}%`,
+                            transform: `rotate(${rotate}deg)`,
+                            zIndex: z,
+                          }}
+                        />
+                      );
+                    })
+                  ) : (
+                    <p style={{ padding: 16 }}>No notes found.</p>
+                  )}
+                </Box>
+              )}
+
               {selectedNote && (
-                  <DreamModal
-                    isOpen={true}
-                    onClose={() => setSelectedNote(null)}
-                    title={selectedNote.title}
-                    content={selectedNote.content}
-                    tags={selectedNote.tags.map(t => t.name)}
-                    author={selectedNote.user?.username}
+                <DreamModal
+                  isOpen={true}
+                  onClose={() => setSelectedNote(null)}
+                  title={selectedNote.title}
+                  content={selectedNote.content}
+                  tags={selectedNote.tags.map(t => t.name)}
+                  author={selectedNote.user?.username}
                 />
-            )}
+              )}
 
               <Link
                 href="/"

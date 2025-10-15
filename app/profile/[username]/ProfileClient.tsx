@@ -1,18 +1,17 @@
 "use client";
 
-// Make received requests section and notification not appear unless you have a received request
-// Make it so that dreams are contained in cards and when you select one it pops up as a modal
-// Add private option to Dream creation modal
-// Lots of stylization changes
+// Maybe add some arrows to go left and right through the array
+// Make page reload after accepting or rejecting a friend request
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import FavoriteHeart from "../../components/HeartButton";
-import ReactMarkdown from "react-markdown";
 import { Box } from "@mui/material";
 import DreamModal from "../../components/DreamModal";
+import DreamCard from "../../components/DreamCard";
+import FriendRequestCard from "../../components/FriendRequestCard";
+import FriendCard from "../../components/FriendCard";
 import CreateDreamModal from "../../components/CreateDreamModal";
 
 type Tag = {
@@ -54,10 +53,6 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set(favorites.map(fav => fav.id)))
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([]);
-  const [privateNote, setPrivateNote] = useState(false);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [tags, setTags] = useState("");
   const [showPrivate, setShowPrivate] = useState(false);
   const isFriend = !isOwnProfile && Array.isArray(friends) && friends.some((f: any) => f.id === loggedInUserId);
   const hasSentRequest = Array.isArray(sentRequests) && sentRequests.some((r: any) => r.to?.id === profileUserId);
@@ -251,7 +246,8 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                   height: 1000,
                   backgroundColor: "#A5D0D0",
                   mb: 4,
-                  overflow: "hidden",
+                  overflowY: "auto",
+                  overflowX: "hidden",
                   border: '2px solid #ccc',
                 }}
               >
@@ -282,26 +278,17 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                         return <p>No notes found.</p>;
                       }
 
-                      return visibleNotes.map(({ id, user, title, content, tags, isPrivate }) => (
-                        <article key={id} className="border-b py-4">
-                          <div>
-                            <h2 className="text-xl font-semibold">Posted by {user?.username || "Unknown"}</h2>
-                            <h2 className="text-xl font-semibold">{title}</h2>
-                            <ReactMarkdown>{content}</ReactMarkdown>
-                            <p className="text-sm text-gray-500 mt-2">
-                              Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
-                            </p>
-                            <div>
-                              {!isPrivate && (
-                                <FavoriteHeart
-                                  isFavorited={favoriteIds.has(id)}
-                                  onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
-                                />
-                              )}
-                            </div>
-                          </div>
-                        </article>
-                      ))
+                      return visibleNotes.map(note => {
+                        return (
+                          <DreamCard
+                            key={note.id}
+                            dream={note}
+                            isFavorited={favoriteIds.has(note.id)}
+                            onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                            onOpen={() => setSelectedNote(note)}
+                          />
+                        );
+                      });
                     })()}
                   </section>
 
@@ -309,61 +296,53 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                     <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Favorite Dreams" : `${user.username}'s Favorite Dreams`}</h2>
 
                     {Array.isArray(favorites) && favorites.length > 0 ? (
-                      favorites.map(({ id, user, title, content, tags }) => (
-                        <article key={id} className="border-b py-4 flex justify-between items-start">
-                          <div>
-                            <h2 className="text-xl font-semibold">Posted by {user?.username || "Unknown"}</h2>
-                            <h2 className="text-xl font-semibold">{title}</h2>
-                            <ReactMarkdown>{content}</ReactMarkdown>
-                            <p className="text-sm text-gray-500 mt-2">
-                              Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
-                            </p>
-                          </div>
-                          <div className="mr-4">
-
-                            {(isOwnProfile &&
-                              <FavoriteHeart
-                                isFavorited={favoriteIds.has(id)}
-                                onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
-                              />
-                            )}
-                          </div>
-                        </article>
-                      ))
+                      favorites.map(note => {
+                        return (
+                          <DreamCard
+                            key={note.id}
+                            dream={note}
+                            isFavorited={favoriteIds.has(note.id)}
+                            onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                            onOpen={() => setSelectedNote(note)}
+                          />
+                        );
+                      })
                     ) : (
-                      <p>No favorite notes found.</p>
+                      <p>No favorite dreams found.</p>
                     )}
                   </section>
 
                   {isOwnProfile && (
                     <div className="mb-4">
-                      <h3 className="text-lg font-semibold">Received</h3>
-                      {Array.isArray(receivedRequests) && receivedRequests.length > 0 ? (
-                        receivedRequests.map(({ id, from }) => (
-                          <article key={id as string} className="border-b py-4">
-                            <h2 className="text-xl font-semibold">From: {from?.username || "Unknown"}</h2>
-                            <button onClick={() => handleFriendRequestAccept(from?.id as string, id as string)} className="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
-                              Accept Request
-                            </button>
-                            <button onClick={() => handleFriendRequestReject(from?.id as string, id as string)} className="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
-                              Reject Request
-                            </button>
-                          </article>
-                        ))
-                      ) : (
-                        <p>No friend requests found.</p>
+                      {receivedRequests.length > 0 && (
+                        <h3 className="text-lg font-semibold">Received</h3>
                       )}
+                      {Array.isArray(receivedRequests) && receivedRequests.length > 0 ? (
+                        receivedRequests.map(({ id, from }) => {
+                          return (
+                            <FriendRequestCard
+                              key={id as string}
+                              from={from as { id: string; username: string }}
+                              onAccept={() => handleFriendRequestAccept(from?.id as string, id as string)}
+                              onReject={() => handleFriendRequestReject(from?.id as string, id as string)}
+                            />
+                          )
+                        })
+                      ) : null}
                     </div>
                   )}
 
                   <section className="mb-8">
                     <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Friends" : `${user.username}'s Friends`}</h2>
                     {Array.isArray(friends) && friends.length > 0 ? (
-                      friends.map(({ id, username }) => (
-                        <article key={id} className="border-b py-4">
-                          <h2 className="text-xl font-semibold">Friend: {username || "Unknown"}</h2>
-                        </article>
-                      ))
+                      friends.map(({ id, username }) => {
+                        return (
+                          <FriendCard
+                            key={id as string}
+                            username={username as string}
+                          />
+                        );
+                      })
                     ) : (
                       <p>No friends found.</p>
                     )}
