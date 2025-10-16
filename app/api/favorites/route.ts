@@ -1,12 +1,12 @@
 import { prisma } from '@/lib/prisma';
-import { getAuth } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // API for Adding a note to favorites
 export async function POST(req: NextRequest) {
     try {
         // Renames userId property of Clerks authorization object to loggedInUserId
-        const { userId: loggedInUserId } = getAuth(req);
+        const { userId: loggedInUserId } = await auth();
         // If no logged in user, return unauthorized
         if (!loggedInUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -62,7 +62,7 @@ export async function DELETE(req: NextRequest) {
 
     try {
 
-        const { userId: loggedInUserId } = getAuth(req);
+        const { userId: loggedInUserId } = await auth();
 
         if (!loggedInUserId) {
             return NextResponse.json({ error: 'Unathorized' }, { status: 401 })
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
 
         const profileUserId = searchParams.get("userId");
 
-        const { userId: loggedInUserId } = getAuth(req);
+        const { userId: loggedInUserId } = await auth();
 
         if (!loggedInUserId) {
             return NextResponse.json({ error: 'Unathorized' }, { status: 401 })
