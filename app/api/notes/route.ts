@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const { title, content, tags, private: isPrivate } = await req.json()
+    const { title, content, tags, isPrivate } = await req.json()
 
     const newNote = await prisma.note.create({
       data: {

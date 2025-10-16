@@ -1,6 +1,9 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import FavoriteHeart from "./HeartButton";
+import Link from "next/link";
 
 type DreamModalProps = {
     isOpen: boolean;
@@ -9,35 +12,83 @@ type DreamModalProps = {
     content: string;
     tags: string[];
     author?: string;
+    isFavorited?: boolean;
+    onToggleFavorite?: () => void;
 };
+
+type Favorite = DreamModalProps & { id: string };
 
 export default function DreamModal({ 
     isOpen, 
     onClose, 
-    title, 
-    content, 
+    title,
+    content,
     tags, 
-    author 
+    author,
+    isFavorited = false,
+    onToggleFavorite,
 }: DreamModalProps) {
+
     if (!isOpen) return null;
 
+    const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        (async () => {
+            const res = await fetch("/api/favorites");
+            if (res.ok) {
+                const data = await res.json();
+                setFavoriteIds(new Set(data.map((fav: Favorite) => fav.id)));
+            }
+        })();
+    }, []);
+
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50" style={{ zIndex: 2001 }}>
-            <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-lg">
-                <h2 className="text-xl font-bold mb-2">{title}</h2>
-                {author && <p className="text-sm text-gray-600 mb-4">By {author}</p>}
-                <p className="text-gray-800 whitespace-pre-line">{content}</p>
-                {tags.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-4">
-                        Tags: {tags.join(", ")}
+        <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header with title and favorite heart */}
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                        <h2 className="text-2xl font-bold mb-2">{title}</h2>
+                        <Link href={`/profile/${author}`} className="text-gray-600 mb-4">By {author}</Link>
+                    </div>
+                    
+                    {/* Favorite heart in the top right */}
+                    <div className="ml-4">
+                        <FavoriteHeart
+                            isFavorited={isFavorited}
+                            onToggle={onToggleFavorite ?? (() => {})}
+                        />
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="prose prose-lg max-w-none mb-6">
+                    <ReactMarkdown>{content}</ReactMarkdown>
+                </div>
+
+                {/* Tags */}
+                <div className="mb-6">
+                    <p className="text-sm text-gray-600">
+                        Tags: {tags.length > 0 ? tags.join(", ") : "No tags"}
                     </p>
-                )}
-                <button
-                    onClick={onClose}
-                    className="mt-4 px-4 py-2 bg-gray-700 text-white rounded"
-                >
-                    Close
-                </button>
+                </div>
+
+                {/* Close button */}
+                <div className="flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                    >
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     );

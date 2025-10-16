@@ -18,6 +18,7 @@ export default function CreateDreamModal({
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [tags, setTags] = useState('');
+    const [isPrivate, setIsPrivate] = useState(false);
 
     async function handleCreateDream() {
         const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -25,7 +26,7 @@ export default function CreateDreamModal({
         const res = await fetch('/api/notes', {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, content, tags: tagsArray }),
+            body: JSON.stringify({ title, content, tags: tagsArray, isPrivate }),
         });
         if (res.ok) {
             const newDream = await res.json();
@@ -33,6 +34,7 @@ export default function CreateDreamModal({
             setTitle("");
             setContent("");
             setTags("");
+            setIsPrivate(false);
             onClose();
         }
     }
@@ -60,6 +62,15 @@ export default function CreateDreamModal({
                 value={tags}
                 onChange={e => setTags(e.target.value)}
             />
+            <label className="flex items-center">
+                <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={isPrivate}
+                    onChange={e => setIsPrivate(e.target.checked)}
+                />
+                Private
+            </label>
 
             <div className="flex justify-end space-x-2">
                 <button className="px-4 py-2 bg-gray-300 rounded" onClick={onClose}>

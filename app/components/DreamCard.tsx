@@ -4,12 +4,6 @@ import { ReactNode, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import FavoriteHeart from "./HeartButton";
 
-// High Level Approach:
-// Optionally extract the random positioning logic into a small hook (useScatterPositions(ids)).
-// In UniversalDreamSearch, when notes search results arrive, render them with the same NoteCard + (optionally) scatter positioning container.
-// Add modal handling in the search component (or lift it up) so clicking a search card opens the same DreamModal.
-// Reuse the favorite heart by passing the needed props (you may need to fetch favorites in the search component or pass a favorite set + toggle function down from parent).
-
 export type Note = {
     id: string;
     user: { username: string };
@@ -81,12 +75,8 @@ export default function DreamCard({
             </p>
             <div
                 className="mt-1"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite();
-                }}
             >
-                <FavoriteHeart isFavorited={isFavorited} onToggle={onToggleFavorite} />
+                <FavoriteHeart isFavorited={isFavorited} onToggle={() => {}} static={true} />
             </div>
         </div>
     );

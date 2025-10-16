@@ -1,6 +1,6 @@
 "use client";
 
-// Maybe add some arrows to go left and right through the array
+// Maybe add some arrows to go left and right through the array when in modal form
 // Make page reload after accepting or rejecting a friend request
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";

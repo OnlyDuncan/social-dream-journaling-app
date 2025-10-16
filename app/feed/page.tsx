@@ -1,11 +1,9 @@
 "use client";
 
 // Make sure Dreams don't cover anything important
-// Make it so hearting a Dream does not trigger the modal, and add heart to modal of Dream
-// Make it so that clicking on the username of a user in the modal takes you to that user's page
-// Add private option to Dream creation modal
 // After styling make functional on mobile devices
 // Add swipe gestures for mobile
+// Figure out Vercel issue or host it somewhere else
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import Link from "next/link";
@@ -159,6 +157,8 @@ export default function Feed() {
                   content={selectedNote.content}
                   tags={selectedNote.tags.map(t => t.name)}
                   author={selectedNote.user?.username}
+                  isFavorited={favoriteIds.has(selectedNote.id)}
+                  onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
                 />
               )}
 
