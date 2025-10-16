@@ -27,7 +27,7 @@ type Note = {
 };
 type Favorite = Note;
 
-export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: boolean }) {
+export default function Feed() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
