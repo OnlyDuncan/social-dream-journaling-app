@@ -2,6 +2,7 @@
 
 // Make sure Dreams don't cover anything important
 // After styling make functional on mobile devices
+// Add scalability and feed algorithm
 // Add swipe gestures for mobile
 // Figure out Vercel issue or host it somewhere else
 
@@ -16,6 +17,7 @@ import CreateDreamModal from "../components/CreateDreamModal";
 import DreamCard from "../components/DreamCard";
 
 type Tag = { id: string; name: string; };
+
 type Note = {
   id: string;
   user: { username: string };
@@ -23,6 +25,7 @@ type Note = {
   content: string;
   tags: Tag[];
 };
+
 type Favorite = Note;
 
 export default function Feed() {

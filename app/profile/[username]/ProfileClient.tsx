@@ -7,9 +7,9 @@ import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { Box } from "@mui/material";
+import { Box, Grid, Button } from "@mui/material";
 import DreamModal from "../../components/DreamModal";
-import DreamCard from "../../components/DreamCard";
+import ProfileDreamCard from "../../components/ProfileDreamCard";
 import FriendRequestCard from "../../components/FriendRequestCard";
 import FriendCard from "../../components/FriendCard";
 import CreateDreamModal from "../../components/CreateDreamModal";
@@ -53,7 +53,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set(favorites.map(fav => fav.id)))
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([]);
-  const [showPrivate, setShowPrivate] = useState(false);
+  const [dreamViewMode, setDreamViewMode] = useState<'public' | 'favorite' | 'private'>('public');
   const isFriend = !isOwnProfile && Array.isArray(friends) && friends.some((f: any) => f.id === loggedInUserId);
   const hasSentRequest = Array.isArray(sentRequests) && sentRequests.some((r: any) => r.to?.id === profileUserId);
   const hasReceivedRequest = Array.isArray(receivedRequests) && receivedRequests.some((r: any) => r.from?.id === profileUserId);
@@ -73,6 +73,47 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     buttonLabel = "Accept / Reject Pending";
     disabled = true;
   }
+
+  const cycleDreamView = () => {
+    setDreamViewMode(current => {
+      switch (current) {
+        case 'public':
+          return 'favorite';
+        case 'favorite':
+          return isOwnProfile ? 'private' : 'public';
+        case 'private':
+          return 'public';
+        default:
+          return 'public';
+      }
+    });
+  };
+
+  const getDreamViewLabel = () => {
+    switch (dreamViewMode) {
+      case 'public':
+        return 'Public Dreams';
+      case 'favorite':
+        return 'Favorite Dreams';
+      case 'private':
+        return 'Private Dreams';
+      default:
+        return 'Public Dreams';
+    }
+  };
+
+  const getFilteredDreams = () => {
+    switch (dreamViewMode) {
+      case 'public':
+        return notes.filter(note => !note.isPrivate);
+      case 'favorite':
+        return favorites;
+      case 'private':
+        return isOwnProfile ? notes.filter(note => note.isPrivate) : [];
+      default:
+        return notes.filter(note => !note.isPrivate);
+    }
+  };
 
   useEffect(() => {
     if (!profileUserId) return;
@@ -237,147 +278,145 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
           flexDirection: "column",
         }}>
           <SignedIn>
-            <div className="mt-4">
-              {/* <UniversalSearch /> */}
+            <Box>
+              <Grid container spacing={2} alignItems="center">
+                <Grid size={{ xs: 6, md: 8 }}>
+                  Reverie
+                </Grid>
+                <Grid size={{ xs: 6, md: 4 }} sx={{ textAlign: "right" }}>
+                  We are but stars, shivering in the dark
+                </Grid>
+                <Grid size={{ xs: 12, md: 12 }}>
+                  <Grid size={{ xs: 12 }}>
+                    <Box sx={{ display: "flex", gap: 2 }}>
+                      <Button variant="contained" color="primary" href="/feed">
+                        Feed
+                      </Button>
+                      <Button variant="contained" color="primary" onClick={cycleDreamView}>
+                        {getDreamViewLabel()} ({getFilteredDreams().length})
+                      </Button>
+                      <Box sx={{ backgroundColor: "red" }}>
+                        Search Bar
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid container size={{ xs: 12 }} spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Box sx={{ backgroundColor: "#FFFFFF", p: 2 }}>
 
-              <Box
-                sx={{
-                  position: "relative",
-                  height: 1000,
-                  backgroundColor: "#A5D0D0",
-                  mb: 4,
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  border: '2px solid #ccc',
-                }}
-              >
-                <div className="mt-4">
+                        <section className="mb-8">
+                          <h2 className="text-2xl font-bold mb-4">
+                            {dreamViewMode === 'public' && (isOwnProfile ? "Your Public Dreams" : `${user.username}'s Dreams`)}
+                            {dreamViewMode === 'favorite' && (isOwnProfile ? "Your Favorite Dreams" : `${user.username}'s Favorite Dreams`)}
+                            {dreamViewMode === 'private' && "Your Private Dreams"}
+                          </h2>
 
-                  {isOwnProfile && (
-                    <button
-                      onClick={() => setShowPrivate(prev => !prev)}
-                      className="mb-4 px-4 py-2 bg-purple-600 text-white rounded"
-                    >
-                      {showPrivate ? "Show Public Notes" : "Show Private Notes"}
-                    </button>
-                  )}
+                          {(() => {
+                            const filteredDreams = getFilteredDreams();
 
-                  <section className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Dreams" : `${user.username}'s Dreams`}</h2>
+                            if (filteredDreams.length === 0) {
+                              return (
+                                <p className="text-gray-500 italic">
+                                  {dreamViewMode === 'public' && "No public dreams found."}
+                                  {dreamViewMode === 'favorite' && "No favorite dreams found."}
+                                  {dreamViewMode === 'private' && "No private dreams found."}
+                                </p>
+                              );
+                            }
 
-                    {(() => {
-                      const visibleNotes = notes.filter(note => {
-                        if (isOwnProfile) {
-                          return showPrivate ? note.isPrivate : !note.isPrivate;
-                        } else {
-                          return !note.isPrivate;
-                        }
-                      });
+                            return filteredDreams.map(note => (
+                              <ProfileDreamCard
+                                key={note.id}
+                                dream={note}
+                                isFavorited={favoriteIds.has(note.id)}
+                                onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                                onOpen={() => setSelectedNote(note)}
+                              />
+                            ));
+                          })()}
+                        </section>
+                      </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Box sx={{ backgroundColor: "#FFFFFF", height: "100%"}}>
+                        <Box>
+                          Profile Image and Description
+                        </Box>
+                        <Box>
+                          {isOwnProfile && (
+                            <div className="mb-4">
+                              {receivedRequests.length > 0 && (
+                                <h3 className="text-lg font-semibold">Received Friend Requests</h3>
+                              )}
+                              {Array.isArray(receivedRequests) && receivedRequests.length > 0 ? (
+                                receivedRequests.map(({ id, from }) => {
+                                  return (
+                                    <FriendRequestCard
+                                      key={id as string}
+                                      from={from as { id: string; username: string }}
+                                      onAccept={() => handleFriendRequestAccept(from?.id as string, id as string)}
+                                      onReject={() => handleFriendRequestReject(from?.id as string, id as string)}
+                                    />
+                                  )
+                                })
+                              ) : null}
+                            </div>
+                          )}
 
-                      if (visibleNotes.length === 0) {
-                        return <p>No notes found.</p>;
-                      }
-
-                      return visibleNotes.map(note => {
-                        return (
-                          <DreamCard
-                            key={note.id}
-                            dream={note}
-                            isFavorited={favoriteIds.has(note.id)}
-                            onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
-                            onOpen={() => setSelectedNote(note)}
-                          />
-                        );
-                      });
-                    })()}
-                  </section>
-
-                  <section className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Favorite Dreams" : `${user.username}'s Favorite Dreams`}</h2>
-
-                    {Array.isArray(favorites) && favorites.length > 0 ? (
-                      favorites.map(note => {
-                        return (
-                          <DreamCard
-                            key={note.id}
-                            dream={note}
-                            isFavorited={favoriteIds.has(note.id)}
-                            onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
-                            onOpen={() => setSelectedNote(note)}
-                          />
-                        );
-                      })
-                    ) : (
-                      <p>No favorite dreams found.</p>
-                    )}
-                  </section>
-
-                  {isOwnProfile && (
-                    <div className="mb-4">
-                      {receivedRequests.length > 0 && (
-                        <h3 className="text-lg font-semibold">Received</h3>
-                      )}
-                      {Array.isArray(receivedRequests) && receivedRequests.length > 0 ? (
-                        receivedRequests.map(({ id, from }) => {
+                          {!isOwnProfile && (
+                            <button
+                              onClick={() => handleFriend()}
+                              disabled={disabled}
+                              className={`mb-4 px-4 py-2 rounded text-white ${ disabled ? "bg-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
+                            >
+                              {buttonLabel}
+                            </button>
+                          )}
+                        </Box>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Grid>
+                <Grid size={{ xs: 12, md: 12}}>
+                  <Box sx={{ backgroundColor: "#FFFFFF"}}>
+                    <section className="mb-8">
+                      <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Friends" : `${user.username}'s Friends`}</h2>
+                      {Array.isArray(friends) && friends.length > 0 ? (
+                        friends.map(({ id, username }) => {
                           return (
-                            <FriendRequestCard
+                            <FriendCard
                               key={id as string}
-                              from={from as { id: string; username: string }}
-                              onAccept={() => handleFriendRequestAccept(from?.id as string, id as string)}
-                              onReject={() => handleFriendRequestReject(from?.id as string, id as string)}
+                              username={username as string}
                             />
                           )
                         })
-                      ) : null}
-                    </div>
-                  )}
+                      ) : (
+                        <p>No friends found.</p>
+                      )}
+                    </section>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 12 }}>
+                  <Box sx={{ textAlign: "right" }}>
+                    Could it think, the heart would stop beating
+                  </Box>
+                </Grid>
+              </Grid>
 
-                  <section className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Friends" : `${user.username}'s Friends`}</h2>
-                    {Array.isArray(friends) && friends.length > 0 ? (
-                      friends.map(({ id, username }) => {
-                        return (
-                          <FriendCard
-                            key={id as string}
-                            username={username as string}
-                          />
-                        );
-                      })
-                    ) : (
-                      <p>No friends found.</p>
-                    )}
-                  </section>
+              <div>
+                {selectedNote && (
+                  <DreamModal
+                    isOpen={true}
+                    onClose={() => setSelectedNote(null)}
+                    title={selectedNote.title}
+                    content={selectedNote.content}
+                    tags={selectedNote.tags.map(t => t.name)}
+                    author={selectedNote.user?.username}
+                  />
+                )}
+              </div>
 
-                  {!isOwnProfile && (
-                    <button
-                      onClick={() => handleFriend()}
-                      disabled={disabled}
-                      className={`mb-4 px-4 py-2 rounded text-white ${ disabled ? "bg-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
-                    >
-                      {buttonLabel}
-                    </button>
-                  )}
-
-                  {selectedNote && (
-                    <DreamModal
-                      isOpen={true}
-                      onClose={() => setSelectedNote(null)}
-                      title={selectedNote.title}
-                      content={selectedNote.content}
-                      tags={selectedNote.tags.map(t => t.name)}
-                      author={selectedNote.user?.username}
-                    />
-                  )}
-
-                  <Link
-                    href="/"
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Home
-                  </Link>
-                </div>
-              </Box>
-            </div>
+            </Box>
           </SignedIn>
         </Box>
       </Box>
