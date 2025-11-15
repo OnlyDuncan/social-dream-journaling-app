@@ -45,21 +45,20 @@ export default function DreamModal({
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+            style={{ zIndex: 9999 }}
             onClick={onClose}
         >
             <div
                 className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header with title and favorite heart */}
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                         <h2 className="text-2xl font-bold mb-2">{title}</h2>
                         <Link href={`/profile/${author}`} className="text-gray-600 mb-4">By {author}</Link>
                     </div>
                     
-                    {/* Favorite heart in the top right */}
                     <div className="ml-4">
                         <FavoriteHeart
                             isFavorited={isFavorited}
@@ -68,19 +67,16 @@ export default function DreamModal({
                     </div>
                 </div>
 
-                {/* Content */}
                 <div className="prose prose-lg max-w-none mb-6">
                     <ReactMarkdown>{content}</ReactMarkdown>
                 </div>
 
-                {/* Tags */}
                 <div className="mb-6">
                     <p className="text-sm text-gray-600">
                         Tags: {tags.length > 0 ? tags.join(", ") : "No tags"}
                     </p>
                 </div>
 
-                {/* Close button */}
                 <div className="flex justify-end">
                     <button
                         onClick={onClose}

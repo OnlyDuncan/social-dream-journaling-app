@@ -20,7 +20,7 @@ export default function HomePage() {
       >
         <Box
           sx={{
-            backgroundImage: "url('/noah-buscher---kD6McW60I-unsplash.jpg')",
+            backgroundImage: "url('/images/noah-buscher---kD6McW60I-unsplash.jpg')",
             backgroundSize: "cover",
             padding: 4,
             height: "100%",

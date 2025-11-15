@@ -69,21 +69,18 @@ export default function Feed() {
   const positionKey = useMemo(() => notes.map(n => n.id).join('|'), [notes]);
 
   const positions = useMemo(() => {
-    // Generate one random position per note (stable until notes list changes)
     const arr = notes.map(n => {
       return {
         id: n.id,
-        top: 5 + Math.random() * 80,     // percentages
+        top: 5 + Math.random() * 80,
         left: 5 + Math.random() * 80,
         rotate: (Math.random() - 0.5) * 14,
         z: Math.floor(Math.random() * 100),
       };
     });
     return arr;
-    // Only regenerate when the set of IDs changes
   }, [positionKey]);
 
-  // Helper to lookup position by note id
   function getPos(id: string) {
     return positions.find(p => p.id === id)!;
   }
@@ -107,12 +104,10 @@ export default function Feed() {
             <div className="mt-4">
               <UniversalUserSearch />
 
-              {/* Pass callback to search component */}
               <UniversalDreamSearch 
                 onSearchStateChange={setHasSearchResults}
               />
 
-              {/* Only show main feed if no search results */}
               {!hasSearchResults && (
                 <Box
                   sx={{
@@ -176,12 +171,12 @@ export default function Feed() {
         </Box>
       </Box>
 
-      {/* Floating Action Button (bottom-left) */}
       <button
         type="button"
         aria-label="Create Dream"
         onClick={() => setShowCreate(true)}
-        className="fixed bottom-10 right-16 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-pink-600 hover:bg-pink-500 active:bg-pink-700 text-white text-3xl font-semibold shadow-lg shadow-pink-900/40 transition-colors focus:outline-none focus:ring-4 focus:ring-pink-300"
+        className="fixed bottom-10 right-16 flex items-center justify-center w-14 h-14 rounded-full bg-pink-600 hover:bg-pink-500 active:bg-pink-700 text-white text-3xl font-semibold shadow-lg shadow-pink-900/40 transition-colors focus:outline-none focus:ring-4 focus:ring-pink-300"
+        style={{ zIndex: 9998 }}
       >
         +
       </button>

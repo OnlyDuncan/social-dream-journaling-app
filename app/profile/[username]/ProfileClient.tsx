@@ -2,17 +2,20 @@
 
 // Maybe add some arrows to go left and right through the array when in modal form
 // Make page reload after accepting or rejecting a friend request
+// When user sends request to other user and reloads page, it doesn't say Request Sent anymore
+// User not added to database until they make a post or favorite something
+// Favoriting dreams does not seem to be working anymore
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
-import Link from "next/link";
-import { Box, Grid, Button } from "@mui/material";
+import { Box, Grid, Button, Typography } from "@mui/material";
 import DreamModal from "../../components/DreamModal";
 import ProfileDreamCard from "../../components/ProfileDreamCard";
 import FriendRequestCard from "../../components/FriendRequestCard";
 import FriendCard from "../../components/FriendCard";
 import CreateDreamModal from "../../components/CreateDreamModal";
+import AvatarPlaceholder from "../../components/AvatarPlaceholder";
 
 type Tag = {
   id: string;
@@ -281,10 +284,14 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
             <Box>
               <Grid container spacing={2} alignItems="center">
                 <Grid size={{ xs: 6, md: 8 }}>
-                  Reverie
+                  <a href="/" className="text-4xl font-bold mb-4 text-white">
+                    Reverie
+                  </a>
                 </Grid>
                 <Grid size={{ xs: 6, md: 4 }} sx={{ textAlign: "right" }}>
-                  We are but stars, shivering in the dark
+                  <Typography className="text-white">
+                    We are but stars, shivering in the dark
+                  </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 12 }}>
                   <Grid size={{ xs: 12 }}>
@@ -302,13 +309,17 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                   </Grid>
                   <Grid container size={{ xs: 12 }} spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <Box sx={{ backgroundColor: "#FFFFFF", p: 2 }}>
-
+                      <Box 
+                        sx={{ 
+                          // backgroundColor: "#FFFFFF", 
+                          p: 2
+                        }}
+                      >
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold mb-4">
-                            {dreamViewMode === 'public' && (isOwnProfile ? "Your Public Dreams" : `${user.username}'s Dreams`)}
-                            {dreamViewMode === 'favorite' && (isOwnProfile ? "Your Favorite Dreams" : `${user.username}'s Favorite Dreams`)}
-                            {dreamViewMode === 'private' && "Your Private Dreams"}
+                          <h2 className="text-2xl font-bold mb-4 text-white">
+                            {dreamViewMode === 'public' && (isOwnProfile ? "My Public Dreams" : `${user.username}'s Dreams`)}
+                            {dreamViewMode === 'favorite' && (isOwnProfile ? "My Favorite Dreams" : `${user.username}'s Favorite Dreams`)}
+                            {dreamViewMode === 'private' && "My Private Dreams"}
                           </h2>
 
                           {(() => {
@@ -324,42 +335,103 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                               );
                             }
 
-                            return filteredDreams.map(note => (
-                              <ProfileDreamCard
-                                key={note.id}
-                                dream={note}
-                                isFavorited={favoriteIds.has(note.id)}
-                                onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
-                                onOpen={() => setSelectedNote(note)}
-                              />
-                            ));
+                            return (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  overflowY: "auto",
+                                  gap: 2,
+                                  pl: 2,
+                                  maxHeight: 400,
+                                  direction: 'rtl',
+                                  '&::-webkit-scrollbar': {
+                                    width: 8,
+                                  },
+                                  '&::-webkit-scrollbar-track': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderRadius: 4,
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                    borderRadius: 4,
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                    },
+                                  },
+                                }}
+                              >
+                                <Box sx={{ direction: 'ltr' }}>
+                                  {filteredDreams.map(note => (
+                                    <ProfileDreamCard
+                                      key={note.id}
+                                      dream={note}
+                                      isFavorited={favoriteIds.has(note.id)}
+                                      onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                                      onOpen={() => setSelectedNote(note)}
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
+                            );
                           })()}
                         </section>
                       </Box>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <Box sx={{ backgroundColor: "#FFFFFF", height: "100%"}}>
-                        <Box>
-                          Profile Image and Description
+                      <Box sx={{ backgroundColor: "#C9FFFF", height: "100%", borderRadius: 5, p: 2 }}>
+                        <Box sx={{ display: "flex", flexDirection: "column" }}>
+                          <Typography className="text-2xl font-bold mb-4" sx={{ mx: "auto" }}>{isOwnProfile ? "My Profile" : `${user.username}`}</Typography>
+                          <AvatarPlaceholder size={96} className="mb-2 mx-auto" />
+                          <Box sx={{ height: 60, mb: 2, backgroundColor: "#E0E0E0", borderRadius: 2 }} >
+                            <p className="p-2 text-gray-700 italic">
+                              Description Placeholder
+                            </p>
+                          </Box>
                         </Box>
                         <Box>
                           {isOwnProfile && (
                             <div className="mb-4">
                               {receivedRequests.length > 0 && (
-                                <h3 className="text-lg font-semibold">Received Friend Requests</h3>
+                                <h3 className="text-lg font-semibold mb-4">Friend Requests</h3>
                               )}
                               {Array.isArray(receivedRequests) && receivedRequests.length > 0 ? (
-                                receivedRequests.map(({ id, from }) => {
-                                  return (
-                                    <FriendRequestCard
-                                      key={id as string}
-                                      from={from as { id: string; username: string }}
-                                      onAccept={() => handleFriendRequestAccept(from?.id as string, id as string)}
-                                      onReject={() => handleFriendRequestReject(from?.id as string, id as string)}
-                                    />
-                                  )
-                                })
-                              ) : null}
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    overflowY: "auto",
+                                    gap: 2,
+                                    pb: 2,
+                                    maxHeight: 300,
+                                    '&::-webkit-scrollbar': {
+                                      width: 8,
+                                    },
+                                    '&::-webkit-scrollbar-track': {
+                                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                      borderRadius: 4,
+                                    },
+                                    '&::-webkit-scrollbar-thumb': {
+                                      backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                      borderRadius: 4,
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                      },
+                                    },
+                                  }}
+                                >
+                                  {receivedRequests.map(({ id, from }) => {
+                                    return (
+                                      <FriendRequestCard
+                                        key={id as string}
+                                        from={from as { id: string; username: string }}
+                                        onAccept={() => handleFriendRequestAccept(from?.id as string, id as string)}
+                                        onReject={() => handleFriendRequestReject(from?.id as string, id as string)}
+                                      />
+                                    )
+                                  })}
+                                </Box>
+                                ) : null}
                             </div>
                           )}
 
@@ -378,28 +450,54 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                   </Grid>
                 </Grid>
                 <Grid size={{ xs: 12, md: 12}}>
-                  <Box sx={{ backgroundColor: "#FFFFFF"}}>
+                  <Box 
+                    sx={{ 
+                      // backgroundColor: "#FFFFFF"
+                    }}
+                  >
                     <section className="mb-8">
-                      <h2 className="text-2xl font-bold mb-4">{isOwnProfile ? "Your Friends" : `${user.username}'s Friends`}</h2>
+                      <h2 className="text-2xl font-bold mb-4 text-white">{isOwnProfile ? "My Friends" : `${user.username}'s Friends`}</h2>
+                      
                       {Array.isArray(friends) && friends.length > 0 ? (
-                        friends.map(({ id, username }) => {
-                          return (
-                            <FriendCard
-                              key={id as string}
-                              username={username as string}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            overflowX: 'auto',
+                            gap: 2,
+                            pb: 2,
+                            '&::-webkit-scrollbar': {
+                              height: 8,
+                            },
+                            '&::-webkit-scrollbar-track': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                              borderRadius: 4,
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                              borderRadius: 4,
+                              '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                              },
+                            },
+                          }}
+                        >
+                          {friends.map(({ id, username }) => (
+                            <FriendCard 
+                              key={id as string} 
+                              username={username as string} 
                             />
-                          )
-                        })
+                          ))}
+                        </Box>
                       ) : (
-                        <p>No friends found.</p>
+                        <p className="text-white">No friends found.</p>
                       )}
                     </section>
                   </Box>
                 </Grid>
                 <Grid size={{ xs: 12, md: 12 }}>
-                  <Box sx={{ textAlign: "right" }}>
+                  <Typography className="text-white" sx={{ textAlign: "left" }}>
                     Could it think, the heart would stop beating
-                  </Box>
+                  </Typography>
                 </Grid>
               </Grid>
 

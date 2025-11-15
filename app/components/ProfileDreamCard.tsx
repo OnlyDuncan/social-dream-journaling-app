@@ -22,8 +22,9 @@ type ProfileDreamCardProps = {
 };
 
 const baseStyle: React.CSSProperties = {
-    width: 240,
-    maxHeight: 320,
+    width: "100%",
+    marginBottom: 15,
+    height: 175,
     padding: "12px 14px",
     background: "#ffffffee",
     borderRadius: 12,
@@ -64,9 +65,9 @@ export default function ProfileDreamCard({
             <h2 className="text-sm text-gray-600 mb-2">
                 By {dream.user?.username || "Unknown"}
             </h2>
-            <div className="prose prose-sm max-w-none flex-1 overflow-auto mb-2">
+            {/* <div className="prose prose-sm max-w-none flex-1 overflow-auto mb-2">
                 <ReactMarkdown>{preview}</ReactMarkdown>
-            </div>
+            </div> */}
             <p className="text-[10px] text-gray-600">
                 Tags: {" "}
                 {dream.tags?.length

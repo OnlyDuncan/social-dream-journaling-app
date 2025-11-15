@@ -1,8 +1,7 @@
 "use client";
 
-import { ReactNode, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import FavoriteHeart from "./HeartButton";
+import { Box, Button, Typography } from "@mui/material";
+import AvatarPlaceholder from "./AvatarPlaceholder";
 
 type FriendRequestCardProps = {
     from: { id: string; username: string };
@@ -16,14 +15,24 @@ export default function FriendRequestCard({
     onReject,
 }: FriendRequestCardProps) {
     return (
-        <div className="border-b py-4">
-            <h2 className="text-xl font-semibold">From: {from?.username || "Unknown"}</h2>
-            <button onClick={onAccept} className="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
-                Accept
-            </button>
-            <button onClick={onReject} className="mb-4 px-4 py-2 bg-red-600 text-white rounded">
-                Reject
-            </button>
-        </div>
+        <Box 
+            className="border-b py-4" 
+            sx={{ 
+                backgroundColor: "#B0E0E6",
+                borderRadius: 2,
+                p: 2,
+            }}
+        >
+            <Typography className="text-xl font-semibold" sx={{ m: "auto", p: "auto", mb: 2 }}>{from?.username || "Unknown"}</Typography>
+            <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+                <AvatarPlaceholder size={48} className="mb-2" />
+                <Button onClick={onAccept} className="mb-4" variant="contained" color="primary">
+                    Accept
+                </Button>
+                <Button onClick={onReject} className="mb-4" variant="contained" color="secondary">
+                    Reject
+                </Button>
+            </Box>
+        </Box>
     );
 }
