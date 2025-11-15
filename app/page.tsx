@@ -1,53 +1,81 @@
 "use client";
 
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignOutButton, SignInButton } from "@clerk/nextjs";
 import Link from "next/link";
+import React from "react";
+import { Box, } from "@mui/material";
 
 export default function HomePage() {
   return (
-    <main className="p-4">
-      <SignedOut>
-        <p>You are signed out.</p>
-        <Link href="/sign-in" className="text-blue-600 underline">
-          Sign in
-        </Link>
-      </SignedOut>
+    <main className="">
+      <Box
+        sx={{
+          backgroundColor: "#8E7499",
+          paddingLeft: 2,
+          paddingRight: 2, 
+          paddingTop: 2,
+          height: "100vh",
+          boxSizing: "border-box",
+        }}
+      >
+        <Box
+          sx={{
+            backgroundImage: "url('/images/noah-buscher---kD6McW60I-unsplash.jpg')",
+            backgroundSize: "cover",
+            padding: 4,
+            height: "100%",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "row" }}>
+            <h1 className="text-4xl font-bold mb-4 text-white">
+              Reverie
+            </h1>
+            <h2 className="text-2xl font-semibold mt-2 ml-5 text-white">
+              Dream Journal
+            </h2>
+          </Box>
 
-      <SignedIn>
-        <UserButton />
-        <div className="mt-4">
-          <Link
-            href="/feed"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          <SignedOut>
+            <SignInButton>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-36 text-center">
+                Sign In
+              </button>
+            </SignInButton>
+          </SignedOut>
+
+          <SignedIn>
+            <Box className="mt-4" sx={{ display: "flex", flexDirection: "column" }}>
+              <Link
+                href="/feed"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-36 mb-5 text-center"
+              >
+                Feed
+              </Link>
+              <Link
+                href="/profile"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-36 mb-5 text-center"
+              >
+                Profile
+              </Link>
+              <SignOutButton>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-36 text-center">
+                  Sign Out
+                </button>
+              </SignOutButton>
+            </Box>
+          </SignedIn>
+
+          <div 
+            className="text-white"
+            style={{ marginTop: "auto", alignSelf: "flex-end" }}
           >
-            Feed
-          </Link>
-          <Link
-            href="/profile"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Profile
-          </Link>
-          {/* <Link
-            href="/friends"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            View your notes
-          </Link>
-          <Link
-            href="/private"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            View your notes
-          </Link>
-          <Link
-            href="/favorites"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            View your notes
-          </Link> */}
-        </div>
-      </SignedIn>
+            Sink into the sunless sea
+          </div>
+        </Box>
+      </Box>
     </main>
   );
 }

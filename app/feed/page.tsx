@@ -1,184 +1,193 @@
 "use client";
 
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import Link from "next/link";
-import { useState, useEffect } from "react";
-import ReactMarkdown from 'react-markdown';
-import FavoriteHeart from "../components/HeartButton";
-import UniversalSearch from "../components/UniversalSearch";
+// Make sure Dreams don't cover anything important
+// After styling make functional on mobile devices
+// Add scalability and feed algorithm
+// Add swipe gestures for mobile
+// Figure out Vercel issue or host it somewhere else
 
-type Tag = {
-    id: string;
-    name: string;
-};
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import Link from "next/link";
+import { useState, useEffect, useMemo } from "react";
+import UniversalUserSearch from "../components/UniversalUserSearch";
+import UniversalDreamSearch from "../components/UniversalDreamSearch";
+import { Box } from "@mui/material";
+import DreamModal from "../components/DreamModal";
+import CreateDreamModal from "../components/CreateDreamModal";
+import DreamCard from "../components/DreamCard";
+
+type Tag = { id: string; name: string; };
 
 type Note = {
-    id: string;
-    user: {
-        username: string;
-    };
-    title: string;
-    content: string;
-    tags: Tag[];
+  id: string;
+  user: { username: string };
+  title: string;
+  content: string;
+  tags: Tag[];
 };
 
 type Favorite = Note;
 
-type FavoritesResponse = {
-    favoriteNotes: Favorite[];
-};
+export default function Feed() {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [showCreate, setShowCreate] = useState(false); // controls create modal/form
+  const [hasSearchResults, setHasSearchResults] = useState(false);
 
-export default function Feed({ user, isOwnProfile }: { user: any; isOwnProfile: boolean }) {
-    const [notes, setNotes] = useState<Note[]>([]);
-    const [favorites, setFavorites] = useState<Favorite[]>([]);
-    const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [tags, setTags] = useState('');
+  useEffect(() => {
+    fetch('/api/feed')
+      .then(r => r.json())
+      .then(d => setNotes(d));
+  }, []);
 
-    useEffect(() => {
-        fetch('/api/feed')
-            .then((res) => res.json())
-            .then((data) => {
-                console.log('Fetched Notes:', data);
-                setNotes(data);
-            });
-    }, []);
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/api/favorites");
+      if (res.ok) {
+        const data = await res.json();
+        setFavoriteIds(new Set(data.map((fav: Favorite) => fav.id)));
+      }
+    })();
+  }, []);
 
-    useEffect(() => {
-        async function fetchMyFavorites() {
-            const res = await fetch("/api/favorites");
-            if (res.ok) {
-                const data = await res.json();
-                setFavoriteIds(new Set(data.map((fav: Favorite) => fav.id)));
-            }
-        }
-
-        fetchMyFavorites();
-    }, []);
-
-    async function toggleFavorite(noteId: string, currentlyFavorited: boolean) {
-        try {
-            const res = await fetch("/api/favorites", {
-                method: currentlyFavorited ? "DELETE" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ noteId }),
-            });
-
-            if (!res.ok) {
-                throw new Error("Failed to update favorite");
-            }
-
-            const updatedFavorites: Favorite[] = await res.json();
-            setFavorites(updatedFavorites);
-            setFavoriteIds(new Set(updatedFavorites.map(fav => fav.id)));
-        } catch (error) {
-            console.error(error);
-        }
+  async function toggleFavorite(noteId: string, currentlyFavorited: boolean) {
+    try {
+      const res = await fetch("/api/favorites", {
+        method: currentlyFavorited ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ noteId }),
+      });
+      if (!res.ok) return;
+      const updated: Favorite[] = await res.json();
+      setFavoriteIds(new Set(updated.map(f => f.id)));
+    } catch (e) {
+      console.error(e);
     }
+  }
 
-    async function handleAddNote() {
-        const tagsArray = tags.split(',').map((t) => t.trim()).filter(Boolean)
+  const positionKey = useMemo(() => notes.map(n => n.id).join('|'), [notes]);
 
-        const res = await fetch('/api/notes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, content, tags: tagsArray }),
-        })
+  const positions = useMemo(() => {
+    const arr = notes.map(n => {
+      return {
+        id: n.id,
+        top: 5 + Math.random() * 80,
+        left: 5 + Math.random() * 80,
+        rotate: (Math.random() - 0.5) * 14,
+        z: Math.floor(Math.random() * 100),
+      };
+    });
+    return arr;
+  }, [positionKey]);
 
-        if (res.ok) {
-            const newNote = await res.json()
-            setNotes((prev) => [...prev, newNote])
-            setTitle('')
-            setContent('')
-            setTags('')
-        }
-    }
+  function getPos(id: string) {
+    return positions.find(p => p.id === id)!;
+  }
 
-   return (
-    <main className="p-4">
+  return (
+    <main>
       <SignedOut>
-        <p>You are signed out.</p>
-        <Link href="/sign-in" className="text-blue-600 underline">
-          Sign in
-        </Link>
+        <RedirectToSignIn />
       </SignedOut>
 
-      <SignedIn>
-        <UserButton />
-        <div className="mt-4">
-            <UniversalSearch />
-            <div className="mb-6">
-                <div className="bg-pink-900 p-4">
-                    <input
-                    className="border rounded p-2 w-full mb-2"
-                    placeholder="Title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    />
-                </div>
-                <textarea
-                    className="border rounded p-2 w-full mb-2"
-                    placeholder="Content (Markdown supported)"
-                    rows={6}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                />
-                <input
-                    className="border rounded p-2 w-full"
-                    placeholder="Tags (comma separated)"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                />
-                <button
-                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
-                    onClick={handleAddNote}
+      <Box sx={{ backgroundColor: "#8E7499", px: 2, pt: 2, height: "100%", boxSizing: "border-box" }}>
+        <Box sx={{
+          background: "linear-gradient(to bottom, #446E99 0%, #172533 69%)",
+          p: 4,
+          minHeight: "100vh",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          <SignedIn>
+            <div className="mt-4">
+              <UniversalUserSearch />
+
+              <UniversalDreamSearch 
+                onSearchStateChange={setHasSearchResults}
+              />
+
+              {!hasSearchResults && (
+                <Box
+                  sx={{
+                    position: 'relative',
+                    height: 1000,
+                    backgroundColor: "#A5D0D0",
+                    mb: 4,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    border: '2px solid #ccc'
+                  }}
                 >
-                    Add Note
-                </button>
-            </div>
-            
-            <section>
-                {Array.isArray(notes) && notes.length > 0 ? (
-                    notes.map(({ id, user, title, content, tags }) => (
-                        <article key={id} className="border-b py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold">
-                                    Posted by{" "}
-                                    {user?.username ? (
-                                        <Link href={`/profile/${user.username}`} className="text-blue-600 underline">
-                                            {user.username}
-                                        </Link>
-                                    ) : (
-                                        "Unknown"
-                                    )}
-                                </h2>
-                                <h2 className="text-xl font-semibold">{title}</h2>
-                                <ReactMarkdown>{content}</ReactMarkdown>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Tags: {tags ? tags.map(tag => tag.name).join(', ') : 'No Tags'}
-                                </p>
-                            </div>
-                            <div className="ml-4">
-                                <FavoriteHeart
-                                    isFavorited={favoriteIds.has(id)}
-                                    onToggle={() => toggleFavorite(id, favoriteIds.has(id))}
-                                />
-                            </div>
-                        </article>
-                    ))
-                ) : (
-                    <p>No notes found.</p>
-                )}
-            </section>
-            <Link
+                  <br />
+                  {notes.length > 0 ? (
+                    notes.map(note => {
+                      const { top, left, rotate, z } = getPos(note.id);
+                      return (
+                        <DreamCard
+                          key={note.id}
+                          dream={note}
+                          isFavorited={favoriteIds.has(note.id)}
+                          onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                          onOpen={() => setSelectedNote(note)}
+                          style={{
+                            position: "absolute",
+                            top: `${top}%`,
+                            left: `${left}%`,
+                            transform: `rotate(${rotate}deg)`,
+                            zIndex: z,
+                          }}
+                        />
+                      );
+                    })
+                  ) : (
+                    <p style={{ padding: 16 }}>No notes found.</p>
+                  )}
+                </Box>
+              )}
+
+              {selectedNote && (
+                <DreamModal
+                  isOpen={true}
+                  onClose={() => setSelectedNote(null)}
+                  title={selectedNote.title}
+                  content={selectedNote.content}
+                  tags={selectedNote.tags.map(t => t.name)}
+                  author={selectedNote.user?.username}
+                  isFavorited={favoriteIds.has(selectedNote.id)}
+                  onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
+                />
+              )}
+
+              <Link
                 href="/"
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
+              >
                 Home
-            </Link>
-        </div>
-      </SignedIn>
+              </Link>
+            </div>
+          </SignedIn>
+        </Box>
+      </Box>
+
+      <button
+        type="button"
+        aria-label="Create Dream"
+        onClick={() => setShowCreate(true)}
+        className="fixed bottom-10 right-16 flex items-center justify-center w-14 h-14 rounded-full bg-pink-600 hover:bg-pink-500 active:bg-pink-700 text-white text-3xl font-semibold shadow-lg shadow-pink-900/40 transition-colors focus:outline-none focus:ring-4 focus:ring-pink-300"
+        style={{ zIndex: 9998 }}
+      >
+        +
+      </button>
+
+      {showCreate && (
+        <CreateDreamModal
+          isOpen={showCreate}
+          onClose={() => setShowCreate(false)}
+          onDreamCreated={note => setNotes(prev => [...prev, note])}
+        />
+      )}
     </main>
   );
 }

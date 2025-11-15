@@ -3,9 +3,12 @@ import { useState } from "react";
 type FavoriteHeartProps = {
     isFavorited: boolean;
     onToggle: () => void;
+    static?: boolean; // Add static prop to disable hover effects
 };
 
-export default function FavoriteHeart({ isFavorited, onToggle }: FavoriteHeartProps) {
+export default function FavoriteHeart({ isFavorited, onToggle, static: isStatic = false }: FavoriteHeartProps) {
+    const hoverClass = isStatic ? "" : "hover:scale-110";
+    
     return (
         <button
             aria-label={isFavorited ? "Unfavorite" : "Favorite"}
@@ -15,7 +18,7 @@ export default function FavoriteHeart({ isFavorited, onToggle }: FavoriteHeartPr
             {isFavorited ? (
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6 text-red-500 transition-transform duration-200 hover:scale-110"
+                    className={`w-6 h-6 text-red-500 transition-transform duration-200 ${hoverClass}`}
                     fill="currentColor"
                     viewBox="0 0 24 24"
                     stroke="none"
@@ -25,7 +28,7 @@ export default function FavoriteHeart({ isFavorited, onToggle }: FavoriteHeartPr
             ) : (
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6 text-gray-500 transition-transform duration-200 hover:scale-110"
+                    className={`w-6 h-6 text-gray-500 transition-transform duration-200 ${hoverClass}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

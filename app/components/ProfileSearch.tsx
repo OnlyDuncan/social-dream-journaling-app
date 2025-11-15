@@ -13,7 +13,7 @@ interface SearchResult {
   }>;
 }
 
-export default function UniversalSearch() {
+export default function ProfileSearch() {
   const [query, setQuery] = useState('');
   const [tags, setTags] = useState('');
   const [searchType, setSearchType] = useState<'users' | 'notes' | 'both'>('both');
