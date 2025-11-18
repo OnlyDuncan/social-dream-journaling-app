@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { Box } from "@mui/material";
 
 interface SearchResult {
   users?: Array<{ id: string; username: string }>;
@@ -36,39 +37,41 @@ export default function UniversalSearch() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <div className="mb-4">
+    <Box className="max-w-2xl mx-auto p-4">
+      <Box className="mb-4" sx={{ display: "flex", flexDirection: "row", gap: 2, alignItems: "stretch" }}>
         <input
           type="text"
           placeholder="Search users..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
+          className="flex-1 p-3 border rounded"
+          style={{ height: '44px' }}
         />
 
         <button
           onClick={handleSearch}
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
+          className="px-4 bg-blue-600 text-white rounded disabled:bg-gray-400"
+          style={{ height: '44px', minWidth: '100px' }}
         >
           {isLoading ? 'Searching...' : 'Search'}
         </button>
-      </div>
+      </Box>
 
-      <div>
+      <Box>
         {results.users && results.users.length > 0 && (
-          <div className="mb-6">
+          <Box className="mb-6">
             <h3 className="text-lg font-semibold mb-2">Users</h3>
             {results.users.map(user => (
-              <div key={user.id} className="p-2 border-b">
+              <Box key={user.id} className="p-2 border-b">
                 <a href={`/profile/${user.username}`} className="text-blue-600 hover:underline">
                   @{user.username}
                 </a>
-              </div>
+              </Box>
             ))}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

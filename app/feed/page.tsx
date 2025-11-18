@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import UniversalUserSearch from "../components/UniversalUserSearch";
 import UniversalDreamSearch from "../components/UniversalDreamSearch";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import DreamModal from "../components/DreamModal";
 import CreateDreamModal from "../components/CreateDreamModal";
 import DreamCard from "../components/DreamCard";
@@ -101,12 +101,17 @@ export default function Feed() {
           flexDirection: "column"
         }}>
           <SignedIn>
-            <div className="mt-4">
+            <Box sx={{ display: "flex", flexDirection: "row", gap: 2, alignItems: "center" }}>
+              <img src="/images/Logo.svg" alt="Reverie Logo" style={{ height: 32 }} />
+              <Typography sx={{ color: "white" }}>
+                Hearts are like open graves
+              </Typography>
               <UniversalUserSearch />
-
-              <UniversalDreamSearch 
+            </Box>
+            <div className="mt-4">
+              {/* <UniversalDreamSearch 
                 onSearchStateChange={setHasSearchResults}
-              />
+              /> */}
 
               {!hasSearchResults && (
                 <Box
