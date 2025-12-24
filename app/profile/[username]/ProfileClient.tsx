@@ -1,7 +1,7 @@
 "use client";
 
 // Maybe add some arrows to go left and right through the array when in modal form
-// Make page reload after accepting or rejecting a friend request
+// Make page reload after accepting or rejecting a friend request or make button label update
 // When user sends request to other user and reloads page, it doesn't say Request Sent anymore
 // User not added to database until they make a post or favorite something
 // Favoriting dreams does not seem to be working anymore
@@ -9,7 +9,8 @@
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Box, Grid, Button, Typography } from "@mui/material";
+import { Box, Grid, Button, Typography, Link, Select, FormControl, MenuItem } from "@mui/material";
+import WarningModal from "../../components/WarningModal";
 import DreamModal from "../../components/DreamModal";
 import ProfileDreamCard from "../../components/ProfileDreamCard";
 import FriendRequestCard from "../../components/FriendRequestCard";
@@ -62,10 +63,14 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
   const hasReceivedRequest = Array.isArray(receivedRequests) && receivedRequests.some((r: any) => r.from?.id === profileUserId);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showLimitWarning, setShowLimitWarning] = useState(false);
+  // const [limitType, setLimitType] = useState<'favorites' | 'public' | 'private' | null>(null);
+  // const [warningType, setWarningType] = useState<'warning' | 'limit' | null>(null);
 
   let buttonLabel = "Add Friend";
   let disabled = false;
 
+  // Changes button label to match friend status
   if (isFriend) {
     buttonLabel = "This person is your friend";
     disabled = true;
@@ -77,34 +82,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     disabled = true;
   }
 
-  const cycleDreamView = () => {
-    setDreamViewMode(current => {
-      switch (current) {
-        case 'public':
-          return 'favorite';
-        case 'favorite':
-          return isOwnProfile ? 'private' : 'public';
-        case 'private':
-          return 'public';
-        default:
-          return 'public';
-      }
-    });
-  };
-
-  const getDreamViewLabel = () => {
-    switch (dreamViewMode) {
-      case 'public':
-        return 'Public Dreams';
-      case 'favorite':
-        return 'Favorite Dreams';
-      case 'private':
-        return 'Private Dreams';
-      default:
-        return 'Public Dreams';
-    }
-  };
-
+  // Gets filtered dreams based off of selected view mode
   const getFilteredDreams = () => {
     switch (dreamViewMode) {
       case 'public':
@@ -118,6 +96,55 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   };
 
+  // Number of public dreams by profile user
+  const getPublicDreamsCount = () => {
+    return notes.filter(note => !note.isPrivate).length;
+  };
+
+  // Number of favorite dreams by profile user
+  const getFavoriteDreamsCount = () => {
+    return favoriteIds.size;
+  };
+
+  // Number of private dreams by profile user
+  const getPrivateDreamsCount = () => {
+    return notes.filter(note => note.isPrivate).length;
+  };
+
+  // If favoriteIds size reaches 50, show warning
+  useEffect(() => {
+    if (favoriteIds.size >= 1) {
+      setShowLimitWarning(true);
+    }
+  }, [favoriteIds]);
+
+  // useEffect(() => {
+  //   if (notes.filter(note => !note.isPrivate).length >= 45 && notes.filter(note => !note.isPrivate).length < 50) {
+  //     setShowLimitWarning(true);
+  //     setLimitType('public');
+  //     setWarningType('warning');
+  //   }
+
+  //   if (notes.filter(note => !note.isPrivate).length >= 50) {
+  //     setShowLimitWarning(true);
+  //     setLimitType('public');
+  //     setWarningType('limit');
+  //   }
+
+  //   if (notes.filter(note => note.isPrivate).length >= 45 && notes.filter(note => note.isPrivate).length < 50) {
+  //     setShowLimitWarning(true);
+  //     setLimitType('private');
+  //     setWarningType('warning');
+  //   }
+
+  //   if (notes.filter(note => note.isPrivate).length >= 50) {
+  //     setShowLimitWarning(true);
+  //     setLimitType('private');
+  //     setWarningType('limit');
+  //   }
+  // }, [notes]);
+
+  // Fetches dreams of the profile page user is on
   useEffect(() => {
     if (!profileUserId) return;
     console.log("Profile User ID:", profileUserId);
@@ -135,6 +162,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     fetchProfileNotes();
   }, [profileUserId]);
 
+  // Fetches favorite dreams / favorite dream ids
   async function fetchMyFavorites() {
     const res = await fetch("/api/favorites");
     if (res.ok) {
@@ -147,10 +175,12 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }
 
+  // Fetches favorite dreams when on own profile
   useEffect(() => {
     fetchMyFavorites();
   }, [isOwnProfile]);
 
+  // Fetches friends of the profile page user
   useEffect(() => {
     if (!profileUserId) return;
 
@@ -166,6 +196,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     console.log("Fetched Friends:", friends);
   }, [profileUserId]);
 
+  // Fetches friend requests if on users own profile
   useEffect(() => {
     if (isOwnProfile) {
       fetch("/api/friend-requests/list")
@@ -177,10 +208,18 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }, [isOwnProfile]);
 
+  // Function for toggling a dream as a favorite or not
   async function toggleFavorite(noteId: string, currentlyFavorited: boolean) {
     try {
       console.log("Toggling favorite for note:", noteId, "Currently favorited:", currentlyFavorited);
       
+      if (!currentlyFavorited && favoriteIds.size >= 1) {
+        // setShowLimitWarning(true);
+        // setLimitType('favorites');
+        // setWarningType('limit');
+        return;
+      }
+
       const res = await fetch("/api/favorites", {
         method: currentlyFavorited ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -211,6 +250,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }
 
+  // Function for adding a friend / sending a request
   async function handleFriend() {
     try {
       const res = await fetch("/api/friend-requests/add", {
@@ -239,6 +279,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }
 
+  // Function for accepting a friend request
   async function handleFriendRequestAccept(fromId: string, requestId: string) {
     const res = await fetch("/api/friend-requests/accept", {
       method: "POST",
@@ -252,6 +293,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }
 
+  // Function for rejecting a friend request
   async function handleFriendRequestReject(fromId: string, requestId: string) {
     const res = await fetch("/api/friend-requests/reject", {
       method: "POST",
@@ -284,12 +326,12 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
             <Box>
               <Grid container spacing={2} alignItems="center">
                 <Grid size={{ xs: 6, md: 8 }}>
-                  <a href="/" className="text-4xl font-bold mb-4 text-white">
-                    Reverie
-                  </a>
+                  <Link href="/">
+                    <img src="/images/Logo.svg" alt="Reverie Logo" style={{ height: 85, transform: "translateY(-10px)" }} />
+                  </Link>
                 </Grid>
                 <Grid size={{ xs: 6, md: 4 }} sx={{ textAlign: "right" }}>
-                  <Typography className="text-white">
+                  <Typography className="text-white" sx={{ textWrap: "nowrap", display: { xs: "none", lg: "block" } }}>
                     We are but stars, shivering in the dark
                   </Typography>
                 </Grid>
@@ -299,12 +341,36 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                       <Button variant="contained" color="primary" href="/feed">
                         Feed
                       </Button>
-                      <Button variant="contained" color="primary" onClick={cycleDreamView}>
-                        {getDreamViewLabel()} ({getFilteredDreams().length})
-                      </Button>
-                      <Box sx={{ backgroundColor: "red" }}>
-                        Search Bar
-                      </Box>
+                      <FormControl size="small" sx={{
+                        minWidth: { xs: "100%", sm: 120 },
+                        width: { xs: "100%", sm: "auto" },
+                        backgroundColor: "primary.main",
+                        '& .MuiSelect-select': {
+                          color: 'white',
+                        },
+                        '& .MuiSelect-icon': {
+                          color: 'white',
+                        },
+                        // '& .MuiOutlinedInput-notchedOutline': {
+                        //   borderColor: 'white',
+                        // },
+                        // '&:hover .MuiOutlinedInput-notchedOutline': {
+                        //   borderColor: 'white',
+                        // },
+                        // '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        //   borderColor: 'white',
+                        // },
+                      }}>
+                        <Select
+                          value={dreamViewMode}
+                        >
+                          <MenuItem value="public" onClick={()=> setDreamViewMode("public")}>Public ({getPublicDreamsCount()})</MenuItem>
+                          <MenuItem value="favorite" onClick={()=> setDreamViewMode("favorite")}>Favorite ({getFavoriteDreamsCount()})</MenuItem>
+                          {isOwnProfile && (
+                            <MenuItem value="private" onClick={()=> setDreamViewMode("private")}>Private ({getPrivateDreamsCount()})</MenuItem>
+                          )}
+                        </Select>
+                      </FormControl>
                     </Box>
                   </Grid>
                   <Grid container size={{ xs: 12 }} spacing={2}>
@@ -369,6 +435,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                                       isFavorited={favoriteIds.has(note.id)}
                                       onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
                                       onOpen={() => setSelectedNote(note)}
+                                      canFavorite={favoriteIds.size < 1}
                                     />
                                   ))}
                                 </Box>
@@ -495,7 +562,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                   </Box>
                 </Grid>
                 <Grid size={{ xs: 12, md: 12 }}>
-                  <Typography className="text-white" sx={{ textAlign: "left" }}>
+                  <Typography className="text-white" sx={{ textAlign: "left", textWrap: "nowrap", display: { xs: "none", lg: "block" } }}>
                     Could it think, the heart would stop beating
                   </Typography>
                 </Grid>
@@ -510,6 +577,9 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                     content={selectedNote.content}
                     tags={selectedNote.tags.map(t => t.name)}
                     author={selectedNote.user?.username}
+                    isFavorited={favoriteIds.has(selectedNote.id)}
+                    onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
+                    canFavorite={favoriteIds.size < 1}
                   />
                 )}
               </div>
@@ -518,7 +588,8 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
           </SignedIn>
         </Box>
       </Box>
-
+      
+      {/* If on own profile page, displays create dreams button / modal and warning modal */}
       {isOwnProfile && (
         <>
           <button
@@ -537,6 +608,11 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
               onDreamCreated={note => setNotes(prev => [...prev, note])}
             />
           )}
+
+          <WarningModal
+            isOpen={showLimitWarning}
+            onClose={() => setShowLimitWarning(false)}
+          />
         </>
       )}
     </main>

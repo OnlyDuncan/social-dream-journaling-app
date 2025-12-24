@@ -4,17 +4,16 @@
 // After styling make functional on mobile devices
 // Add scalability and feed algorithm
 // Add swipe gestures for mobile
-// Figure out Vercel issue or host it somewhere else
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
-import UniversalUserSearch from "../components/UniversalUserSearch";
-import UniversalDreamSearch from "../components/UniversalDreamSearch";
 import { Box, Typography } from "@mui/material";
 import DreamModal from "../components/DreamModal";
 import CreateDreamModal from "../components/CreateDreamModal";
 import DreamCard from "../components/DreamCard";
+import UniversalSearch from "../components/UniversalSearch";
+import WarningModal from "../components/WarningModal";
 
 type Tag = { id: string; name: string; };
 
@@ -32,15 +31,19 @@ export default function Feed() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [showCreate, setShowCreate] = useState(false); // controls create modal/form
+  const [showCreate, setShowCreate] = useState(false);
   const [hasSearchResults, setHasSearchResults] = useState(false);
+  const [searchResults, setSearchResults] = useState<Note[]>([]);
+  const [showLimitWarning, setShowLimitWarning] = useState(true);
 
+  // Fetches feed
   useEffect(() => {
     fetch('/api/feed')
       .then(r => r.json())
       .then(d => setNotes(d));
   }, []);
 
+  // Fetches favorite dreams / favorite dream ids
   useEffect(() => {
     (async () => {
       const res = await fetch("/api/favorites");
@@ -51,7 +54,13 @@ export default function Feed() {
     })();
   }, []);
 
+  // Function for toggling a dream as a favorite
   async function toggleFavorite(noteId: string, currentlyFavorited: boolean) {
+    if (!currentlyFavorited && favoriteIds.size >= 50) {
+      setShowLimitWarning(true);
+      return;
+    }
+
     try {
       const res = await fetch("/api/favorites", {
         method: currentlyFavorited ? "DELETE" : "POST",
@@ -69,12 +78,36 @@ export default function Feed() {
   const positionKey = useMemo(() => notes.map(n => n.id).join('|'), [notes]);
 
   const positions = useMemo(() => {
-    const arr = notes.map(n => {
+    const cardWidth = 240; // Your DreamCard width in pixels
+    const cardHeight = 320; // Your DreamCard height in pixels
+    const containerWidth = 1000; // Approximate container width
+    const contentPadding = 25; // Padding inside your cards (from DreamCard style)
+    
+    // Calculate effective content area
+    const contentWidth = cardWidth - (contentPadding * 2); // 190px
+    const contentHeight = cardHeight - (contentPadding * 2); // 270px
+    
+    const arr = notes.map((n, index) => {
+      const gridCols = 3;
+      const row = Math.floor(index / gridCols);
+      const col = index % gridCols;
+      
+      // Space cards so content areas don't overlap, but edges can
+      const horizontalSpacing = (contentWidth + 40) / containerWidth * 100; // 40px edge overlap allowance
+      const verticalSpacing = (contentHeight + 30) / 1000 * 100; // 30px edge overlap allowance
+      
+      const baseLeft = 5 + (col * horizontalSpacing);
+      const baseTop = 5 + (row * verticalSpacing);
+      
+      // Small random offset that won't cause content overlap
+      const randomOffsetX = (Math.random() - 0.5) * 4; // ±2%
+      const randomOffsetY = (Math.random() - 0.5) * 4; // ±2%
+      
       return {
         id: n.id,
-        top: 5 + Math.random() * 80,
-        left: 5 + Math.random() * 80,
-        rotate: (Math.random() - 0.5) * 14,
+        top: Math.max(2, Math.min(85, baseTop + randomOffsetY)),
+        left: Math.max(2, Math.min(85, baseLeft + randomOffsetX)),
+        rotate: (Math.random() - 0.5) * 6, // Reduced rotation
         z: Math.floor(Math.random() * 100),
       };
     });
@@ -94,41 +127,41 @@ export default function Feed() {
       <Box sx={{ backgroundColor: "#8E7499", px: 2, pt: 2, height: "100%", boxSizing: "border-box" }}>
         <Box sx={{
           background: "linear-gradient(to bottom, #446E99 0%, #172533 69%)",
-          p: 4,
+          p: 9,
           minHeight: "100vh",
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column"
         }}>
           <SignedIn>
-            <Box sx={{ display: "flex", flexDirection: "row", gap: 2, alignItems: "center" }}>
-              <img src="/images/Logo.svg" alt="Reverie Logo" style={{ height: 32 }} />
-              <Typography sx={{ color: "white" }}>
-                Hearts are like open graves
-              </Typography>
-              <UniversalUserSearch />
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <UniversalSearch 
+                onSearchStateChange={setHasSearchResults}
+                onSearchResults={setSearchResults}
+              />
             </Box>
             <div className="mt-4">
-              {/* <UniversalDreamSearch 
-                onSearchStateChange={setHasSearchResults}
-              /> */}
-
-              {!hasSearchResults && (
-                <Box
-                  sx={{
-                    position: 'relative',
-                    height: 1000,
-                    backgroundColor: "#A5D0D0",
-                    mb: 4,
-                    overflowY: 'auto',
-                    overflowX: 'hidden',
-                    border: '2px solid #ccc'
-                  }}
-                >
-                  <br />
-                  {notes.length > 0 ? (
-                    notes.map(note => {
-                      const { top, left, rotate, z } = getPos(note.id);
+              <Box
+                sx={{
+                  position: 'relative',
+                  height: 1000,
+                  backgroundColor: "#A5D0D0",
+                  mb: 4,
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  border: '2px solid #ccc'
+                }}
+              >
+                <br />
+                {hasSearchResults ? (
+                  searchResults.length > 0 ? (
+                    searchResults.map(note => {
+                      const position = positions.find(p => p.id === note.id) || {
+                        top: 5 + Math.random() * 80,
+                        left: 5 + Math.random() * 80,
+                        rotate: (Math.random() - 0.5) * 14,
+                        z: Math.floor(Math.random() * 100),
+                      };
                       return (
                         <DreamCard
                           key={note.id}
@@ -138,19 +171,52 @@ export default function Feed() {
                           onOpen={() => setSelectedNote(note)}
                           style={{
                             position: "absolute",
-                            top: `${top}%`,
-                            left: `${left}%`,
-                            transform: `rotate(${rotate}deg)`,
-                            zIndex: z,
+                            top: `${position.top}%`,
+                            left: `${position.left}%`,
+                            transform: `rotate(${position.rotate}deg)`,
+                            zIndex: position.z,
+                          }}
+                        />
+                      )
+                    })
+                  ) : (
+                    <Typography sx={{ textAlign: 'center', mt: 4, color: '#666' }}>
+                      No search results found
+                    </Typography>
+                  )
+                ) : (
+                  notes.length > 0 ? (
+                    notes.map(note => {
+                      const position = positions.find(p => p.id === note.id) || {
+                        top: 5 + Math.random() * 80,
+                        left: 5 + Math.random() * 80,
+                        rotate: (Math.random() - 0.5) * 14,
+                        z: Math.floor(Math.random() * 100),
+                      };
+                      return (
+                        <DreamCard
+                          key={note.id}
+                          dream={note}
+                          isFavorited={favoriteIds.has(note.id)}
+                          onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
+                          onOpen={() => setSelectedNote(note)}
+                          style={{
+                            position: "absolute",
+                            top: `${position.top}%`,
+                            left: `${position.left}%`,
+                            transform: `rotate(${position.rotate}deg)`,
+                            zIndex: position.z,
                           }}
                         />
                       );
                     })
                   ) : (
-                    <p style={{ padding: 16 }}>No notes found.</p>
-                  )}
-                </Box>
-              )}
+                    <Typography sx={{ textAlign: 'center', mt: 4, color: '#666' }}>
+                      No dreams to display
+                    </Typography>
+                  )
+                )}
+              </Box>
 
               {selectedNote && (
                 <DreamModal
@@ -162,6 +228,7 @@ export default function Feed() {
                   author={selectedNote.user?.username}
                   isFavorited={favoriteIds.has(selectedNote.id)}
                   onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
+                  canFavorite={favoriteIds.size < 1}
                 />
               )}
 
@@ -175,7 +242,8 @@ export default function Feed() {
           </SignedIn>
         </Box>
       </Box>
-
+      
+      {/* Displays create dreams button / modal and warning modal */}
       <button
         type="button"
         aria-label="Create Dream"
@@ -193,6 +261,12 @@ export default function Feed() {
           onDreamCreated={note => setNotes(prev => [...prev, note])}
         />
       )}
+
+      <WarningModal
+        isOpen={showLimitWarning}
+        onClose={() => setShowLimitWarning(false)}
+      />
+        
     </main>
   );
 }

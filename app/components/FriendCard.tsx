@@ -12,19 +12,22 @@ export default function FriendCard({
 }: FriendCardProps) {
 
     return (
-        <Box 
-            className="border-b py-4"
-            sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "#D1F2FF",
-                minWidth: 200,
-                flexShrink: 0,
-            }}
-        >
-            <AvatarPlaceholder size={48} className="mb-2" />
-            <h2 className="text-xl font-semibold"> {username || "Unknown"}</h2>
-        </Box>
+        <Link href={`/profile/${username}`}>
+            <Box 
+                className="border-b py-4"
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    backgroundColor: "#D1F2FF",
+                    minWidth: 200,
+                    flexShrink: 0,
+                    borderRadius: 2,
+                }}
+            >
+                <AvatarPlaceholder size={48} className="mb-2" />
+                <h2 className="text-xl font-semibold"> {username || "Unknown"}</h2>
+            </Box>
+        </Link>
     );
 }

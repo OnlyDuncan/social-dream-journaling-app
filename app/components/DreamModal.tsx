@@ -13,7 +13,8 @@ type DreamModalProps = {
     tags: string[];
     author?: string;
     isFavorited?: boolean;
-    onToggleFavorite?: () => void;
+    onToggleFavorite: () => void;
+    canFavorite: boolean;
 };
 
 type Favorite = DreamModalProps & { id: string };
@@ -27,6 +28,7 @@ export default function DreamModal({
     author,
     isFavorited = false,
     onToggleFavorite,
+    canFavorite,
 }: DreamModalProps) {
 
     if (!isOpen) return null;
@@ -62,7 +64,9 @@ export default function DreamModal({
                     <div className="ml-4">
                         <FavoriteHeart
                             isFavorited={isFavorited}
-                            onToggle={onToggleFavorite ?? (() => {})}
+                            canFavorite={canFavorite}
+                            onToggle={onToggleFavorite}
+                            static={true}
                         />
                     </div>
                 </div>

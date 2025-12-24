@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, Link } from "@mui/material";
 import AvatarPlaceholder from "./AvatarPlaceholder";
 
 type FriendRequestCardProps = {
@@ -23,7 +23,11 @@ export default function FriendRequestCard({
                 p: 2,
             }}
         >
-            <Typography className="text-xl font-semibold" sx={{ m: "auto", p: "auto", mb: 2 }}>{from?.username || "Unknown"}</Typography>
+            <Typography className="text-xl font-semibold" sx={{ m: "auto", p: "auto", mb: 2 }}>
+                <Link href={`/profile/${from.id}`}>
+                    {from?.username || "Unknown"}
+                </Link>
+            </Typography>
             <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
                 <AvatarPlaceholder size={48} className="mb-2" />
                 <Button onClick={onAccept} className="mb-4" variant="contained" color="primary">

@@ -3,6 +3,7 @@
 import { ReactNode, useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import FavoriteHeart from "./HeartButton";
+import { Link, Typography } from "@mui/material";
 
 export type Note = {
     id: string;
@@ -19,21 +20,6 @@ type DreamCardProps = {
     onOpen: () => void;
     style?: React.CSSProperties;
     truncateAt?: number;
-};
-
-const baseStyle: React.CSSProperties = {
-    width: 240,
-    maxHeight: 320,
-    padding: "12px 14px",
-    background: "#ffffffee",
-    borderRadius: 12,
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.25)",
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-    backdropFilter: "blur(2px)",
-    transition: "box-shadow 0.2s",
-    cursor: "pointer",
 };
 
 const svgPaths = [
@@ -71,35 +57,35 @@ const fragmentColors = [
     "sepia(0.7) saturate(1.3) brightness(0.98) hue-rotate(28deg)", // Coffee-toned
 ];
 
-function seededRandom(seed: string): number {
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-        const char = seed.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash) / 2147483647;
-}
+// function seededRandom(seed: string): number {
+//     let hash = 0;
+//     for (let i = 0; i < seed.length; i++) {
+//         const char = seed.charCodeAt(i);
+//         hash = ((hash << 5) - hash) + char;
+//         hash = hash & hash;
+//     }
+//     return Math.abs(hash) / 2147483647;
+// }
 
-function generateSeededValues(dreamId: string) {
-    const baseRandom = seededRandom(dreamId);
-    const colorRandom = seededRandom(dreamId + 'color');
-    const rotationRandom = seededRandom(dreamId + 'rotation');
-    const scaleRandom = seededRandom(dreamId + 'scale');
-    const flipXRandom = seededRandom(dreamId + 'flipX');
-    const flipYRandom = seededRandom(dreamId + 'flipY');
-    const pathRandom = seededRandom(dreamId + 'path');
+// function generateSeededValues(dreamId: string) {
+//     const baseRandom = seededRandom(dreamId);
+//     const colorRandom = seededRandom(dreamId + 'color');
+//     const rotationRandom = seededRandom(dreamId + 'rotation');
+//     const scaleRandom = seededRandom(dreamId + 'scale');
+//     const flipXRandom = seededRandom(dreamId + 'flipX');
+//     const flipYRandom = seededRandom(dreamId + 'flipY');
+//     const pathRandom = seededRandom(dreamId + 'path');
 
-    return {
-        baseRandom,
-        colorRandom,
-        rotationRandom,
-        scaleRandom,
-        flipXRandom,
-        flipYRandom,
-        pathRandom,
-    };
-}
+//     return {
+//         baseRandom,
+//         colorRandom,
+//         rotationRandom,
+//         scaleRandom,
+//         flipXRandom,
+//         flipYRandom,
+//         pathRandom,
+//     };
+// }
 
 export default function DreamCard({ 
     dream,
@@ -109,18 +95,70 @@ export default function DreamCard({
     style,
     truncateAt = 220,
 }: DreamCardProps) {
+
+    const svgPaths = [
+        // "/images/dream-cards/Fragment1.svg",
+        "/images/dream-cards/Fragment2.svg",
+        // "/images/dream-cards/Fragment3.svg",
+        "/images/dream-cards/Fragment4.svg",
+        // "/images/dream-cards/Fragment5.svg",
+        "/images/dream-cards/Fragment6.svg",
+        // "/images/dream-cards/Fragment7.svg",
+        // "/images/dream-cards/Fragment8.svg",
+        "/images/dream-cards/Fragment9.svg",
+        // "/images/dream-cards/Fragment10.svg",
+        "/images/dream-cards/Fragment11.svg",
+        // "/images/dream-cards/Fragment12.svg",
+        // "/images/dream-cards/Fragment13.svg",
+    ];
+
+    const fragmentColors = [
+        "sepia(0.8) saturate(1.2) brightness(1.3)",                    // Classic aged paper
+        "sepia(0.6) saturate(1.1) brightness(1.4) hue-rotate(10deg)",  // Warm cream
+        "sepia(0.7) saturate(1.3) brightness(1.2) hue-rotate(15deg)",  // Antique beige
+        "sepia(0.5) saturate(1.0) brightness(1.5) hue-rotate(20deg)",  // Light parchment
+        "sepia(0.9) saturate(1.4) brightness(1.1) hue-rotate(25deg)",  // Deep aged paper
+        "sepia(0.4) saturate(0.9) brightness(1.4) hue-rotate(5deg)",   // Pale cream
+        "sepia(0.8) saturate(1.1) brightness(1.3) hue-rotate(30deg)",  // Golden aged
+        "sepia(0.6) saturate(1.2) brightness(1.2) hue-rotate(-5deg)",  // Cool aged paper
+        // "sepia(0.7) saturate(1.0) brightness(1.4) hue-rotate(35deg)",  // Warm ivory
+        "sepia(0.5) saturate(1.3) brightness(1.3) hue-rotate(12deg)",  // Vintage white
+        "sepia(0.9) saturate(1.2) brightness(1.2) hue-rotate(18deg)", // Old manuscript
+        "sepia(0.3) saturate(0.8) brightness(1.5) hue-rotate(8deg)",   // Fresh parchment
+        "sepia(0.8) saturate(1.1) brightness(1.2) hue-rotate(-3deg)",  // Neutral aged
+        // "sepia(0.6) saturate(1.4) brightness(1.3) hue-rotate(22deg)",  // Tea-stained
+        "sepia(0.4) saturate(1.0) brightness(1.5) hue-rotate(15deg)", // Light vintage
+        "sepia(0.7) saturate(1.3) brightness(1.2) hue-rotate(28deg)", // Coffee-toned
+    ];
+
+    const fragmentTextures = [
+        "/images/paper-textures/PaperTexture1.jpg",
+        "/images/paper-textures/PaperTexture2.jpg",
+        "/images/paper-textures/PaperTexture3.jpg",
+        "/images/paper-textures/PaperTexture4.jpg",
+        "/images/paper-textures/PaperTexture5.jpg",
+    ];
+
     const background = useMemo(() => {
-        const randoms = generateSeededValues(dream.id);
-        
-        const path = svgPaths[Math.floor(randoms.pathRandom * svgPaths.length)];
-        const flipX = randoms.flipXRandom < 0.5 ? -1 : 1;
-        const flipY = randoms.flipYRandom < 0.5 ? -1 : 1;
-        const scale = 1.2 + randoms.scaleRandom * 0.3;
-        
-        const colorFilter = fragmentColors[Math.floor(randoms.colorRandom * fragmentColors.length)];
+        const path = svgPaths[Math.floor(Math.random() * svgPaths.length)];
+        const flipX = Math.random() < 0.5 ? -1 : 1;
+        const flipY = Math.random() < 0.5 ? -1 : 1;
+        const scale = 1.2 + Math.random() * 0.3;
+        const colorFilter = fragmentColors[Math.floor(Math.random() * fragmentColors.length)];
 
         return { path, flipX, flipY, scale, colorFilter };
-    }, [dream.id]);
+    }, []);
+
+    const selectedTexture = useMemo(() => {
+        return fragmentTextures[Math.floor(Math.random() * fragmentTextures.length)];
+    }, []);
+
+    const textureFlip = useMemo(() => {
+        const flipX = Math.random() < 0.5 ? -1 : 1;
+        const flipY = Math.random() < 0.5 ? -1 : 1;
+
+        return `scaleX(${flipX}) scaleY(${flipY})`
+    }, []);
 
     const preview = 
         dream.content.length > truncateAt
@@ -137,6 +175,7 @@ export default function DreamCard({
             }}
             onClick={onOpen}
         >
+            {/* SVG background */}
             <img
                 src={background.path}
                 alt=""
@@ -153,10 +192,39 @@ export default function DreamCard({
                 }}
             />
 
+            {/* Texture overlay - simplified masking */}
+            <div
+                style={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundImage: `url(${selectedTexture})`,
+                    backgroundSize: "150%", // Make it bigger to test clipping
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                    mixBlendMode: "multiply", // Changed from overlay
+                    opacity: 0.6, // Reduced opacity
+                    pointerEvents: "none",
+                    zIndex: 1,
+                    // Simplified mask - remove conflicting transforms
+                    WebkitMask: `url(${background.path})`,
+                    mask: `url(${background.path})`,
+                    WebkitMaskSize: "cover", // Use cover instead of percentage
+                    maskSize: "cover",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    // Apply same transform as SVG to keep mask aligned
+                    transform: `scale(${background.scale}) scaleX(${background.flipX}) scaleY(${background.flipY})`,
+                    transformOrigin: 'center',
+                }}
+            />
+
+            {/* Content */}
             <div
                 style={{
                     position: "relative",
-                    zIndex: 1,
+                    zIndex: 2,
                     padding: "25px 20px",
                     height: "100%",
                     boxSizing: "border-box",
@@ -167,9 +235,11 @@ export default function DreamCard({
             >
                 <div style={{ flexShrink: 0, marginBottom: "12px" }}>
                     <h3 className="font-bold mb-1 text-center text-sm leading-tight">{dream.title}</h3>
-                    <h2 className="text-xs text-gray-600 text-center">
-                        By {dream.user?.username || "Unknown"}
-                    </h2>
+                    <Typography className="text-xs text-gray-600 text-center">
+                        <Link href={`/profile/${dream.user}`}>
+                            By {dream.user?.username || "Unknown"}
+                        </Link>
+                    </Typography>
                 </div>
 
                 <div 

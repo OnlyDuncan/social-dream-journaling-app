@@ -3,10 +3,11 @@ import { useState } from "react";
 type FavoriteHeartProps = {
     isFavorited: boolean;
     onToggle: () => void;
-    static?: boolean; // Add static prop to disable hover effects
+    static?: boolean;
+    canFavorite: boolean;
 };
 
-export default function FavoriteHeart({ isFavorited, onToggle, static: isStatic = false }: FavoriteHeartProps) {
+export default function FavoriteHeart({ isFavorited, onToggle, static: isStatic = false, canFavorite }: FavoriteHeartProps) {
     const hoverClass = isStatic ? "" : "hover:scale-110";
     
     return (
@@ -29,7 +30,7 @@ export default function FavoriteHeart({ isFavorited, onToggle, static: isStatic 
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className={`w-6 h-6 text-gray-500 transition-transform duration-200 ${hoverClass}`}
-                    fill="none"
+                    fill={canFavorite ? "none" : "currentColor"}
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={2}
