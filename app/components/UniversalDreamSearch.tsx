@@ -197,7 +197,9 @@ export default function UniversalSearch({ onSearchStateChange }: UniversalDreamS
                 title={selectedNote.title}
                 content={selectedNote.content}
                 tags={selectedNote.tags.map(t => t.name)}
-                author={selectedNote.user?.username}
+                author={selectedNote.user?.username} 
+                canFavorite={favoriteIds.size < 1}
+                onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}         
               />
             )}
           </div>
