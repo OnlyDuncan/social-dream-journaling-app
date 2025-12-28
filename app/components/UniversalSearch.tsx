@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Box, FormControl, Link, InputLabel, Typography, Select, MenuItem } from "@mui/material";
 import DreamModal from './DreamModal';
+import { useAuth } from "@clerk/nextjs";
 
 export type Note = {
   id: string;
@@ -22,12 +23,16 @@ type SearchMode = 'users' | 'dreams' | 'tags';
 interface UniversalSearchProps {
   onSearchStateChange?: (hasResults: boolean) => void;
   onSearchResults?: (results: Note[]) => void;
+  user?: any;
 };
 
 export default function UniversalSearch({
     onSearchStateChange,
-    onSearchResults
+    onSearchResults,
+    user
 }: UniversalSearchProps = {}) {
+  const { userId: loggedInUserId } = useAuth();
+  const [notes, setNotes] = useState<Note[]>(user?.notes || []);
   const [query, setQuery] = useState('');
   const [tags, setTags] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>('dreams');
@@ -144,6 +149,26 @@ export default function UniversalSearch({
       setFavoriteIds(new Set(updated.map(n => n.id)));
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function handleDelete(noteId: string ) {
+    try {
+      const res = await fetch(`/api/notes`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: noteId }),
+      });
+
+      if (res.ok) {
+        console.log("Note deleted successfully");
+        setNotes((prev) => prev.filter((note) => note.id !== noteId));
+        setSelectedNote(null);
+      } else {
+        console.error("Failed to delete note");
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
     }
   }
 
@@ -379,6 +404,7 @@ export default function UniversalSearch({
           isFavorited={favoriteIds.has(selectedNote.id)}
           onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
           canFavorite={favoriteIds.size < 1}
+          handleDelete={() => handleDelete(selectedNote.id)}
         />
       )}
     </Box>

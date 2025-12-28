@@ -3,7 +3,9 @@
 import { ReactNode, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import FavoriteHeart from "./HeartButton";
+import DeleteButton from "./DeleteButton";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 
 type DreamModalProps = {
     isOpen: boolean;
@@ -14,6 +16,7 @@ type DreamModalProps = {
     author?: string;
     isFavorited?: boolean;
     onToggleFavorite: () => void;
+    handleDelete: () => void;
     canFavorite: boolean;
 };
 
@@ -28,12 +31,16 @@ export default function DreamModal({
     author,
     isFavorited = false,
     onToggleFavorite,
+    handleDelete,
     canFavorite,
 }: DreamModalProps) {
 
     if (!isOpen) return null;
 
+    const { user } = useUser();
     const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+    const isAuthor = user?.username === author;
 
     useEffect(() => {
         (async () => {
@@ -68,6 +75,12 @@ export default function DreamModal({
                             onToggle={onToggleFavorite}
                             static={true}
                         />
+                        {isAuthor && (
+                            <DeleteButton
+                                static={true}
+                                delete={handleDelete}
+                            />
+                        )}
                     </div>
                 </div>
 

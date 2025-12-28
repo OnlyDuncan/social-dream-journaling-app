@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import DreamCard from './DreamCard';
 import DreamModal from './DreamModal';
+import { useAuth } from "@clerk/nextjs";
 import { Box } from "@mui/material";
 
 type Tag = { id: string; name: string; };
@@ -28,9 +29,12 @@ interface SearchResult {
 
 interface UniversalDreamSearchProps {
   onSearchStateChange?: (hasResults: boolean) => void;
+  user?: any;
 }
 
-export default function UniversalSearch({ onSearchStateChange }: UniversalDreamSearchProps = {}) {
+export default function UniversalSearch({ onSearchStateChange, user }: UniversalDreamSearchProps = {}) {
+  const { userId: loggedInUserId } = useAuth();
+  const [notes, setNotes] = useState<Note[]>(user.notes || []);
   const [query, setQuery] = useState('');
   const [tags, setTags] = useState('');
   const [searchType, setSearchType] = useState<'users' | 'notes' | 'both'>('both');
@@ -61,6 +65,26 @@ export default function UniversalSearch({ onSearchStateChange }: UniversalDreamS
       setFavoriteIds(new Set(updated.map(f => f.id)));
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function handleDelete(noteId: string ) {
+    try {
+      const res = await fetch(`/api/notes`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: noteId }),
+      });
+
+      if (res.ok) {
+        console.log("Note deleted successfully");
+        setNotes((prev) => prev.filter((note) => note.id !== noteId));
+        setSelectedNote(null);
+      } else {
+        console.error("Failed to delete note");
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
     }
   }
 
@@ -199,7 +223,8 @@ export default function UniversalSearch({ onSearchStateChange }: UniversalDreamS
                 tags={selectedNote.tags.map(t => t.name)}
                 author={selectedNote.user?.username} 
                 canFavorite={favoriteIds.size < 1}
-                onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}         
+                handleDelete={() => handleDelete(selectedNote.id)}
+                onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}       
               />
             )}
           </div>

@@ -250,6 +250,27 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }
 
+  // Delete current note
+  async function handleDelete(noteId: string ) {
+    try {
+      const res = await fetch(`/api/notes`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: noteId }),
+      });
+
+      if (res.ok) {
+        console.log("Note deleted successfully");
+        setNotes((prev) => prev.filter((note) => note.id !== noteId));
+        setSelectedNote(null);
+      } else {
+        console.error("Failed to delete note");
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
+    }
+  }
+
   // Function for adding a friend / sending a request
   async function handleFriend() {
     try {
@@ -579,6 +600,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                     author={selectedNote.user?.username}
                     isFavorited={favoriteIds.has(selectedNote.id)}
                     onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
+                    handleDelete={() => handleDelete(selectedNote.id)}
                     canFavorite={favoriteIds.size < 1}
                   />
                 )}

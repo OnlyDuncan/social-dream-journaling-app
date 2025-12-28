@@ -95,3 +95,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { userId } = getAuth(req)
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await req.json()
+
+    const note = await prisma.note.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!note) {
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+    }
+
+    if (note.userId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    await prisma.note.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: 'Note deleted successfully' }, { status: 200 })
+  } catch (error) {
+    console.error('API DELETE Error:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}

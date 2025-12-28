@@ -37,10 +37,29 @@ export default function Feed() {
   const [showLimitWarning, setShowLimitWarning] = useState(true);
 
   // Fetches feed
+  // useEffect(() => {
+  //   fetch('/api/feed')
+  //     .then(r => r.json())
+  //     .then(d => setNotes(d));
+  // }, []);
+
+  // For testing
   useEffect(() => {
     fetch('/api/feed')
       .then(r => r.json())
-      .then(d => setNotes(d));
+      .then(data => {
+        if (data.length > 50) {
+          const shuffled = data
+            .map((item: Note) => ({ ...item, sort: Math.random() }))
+            .sort((a: any, b: any) => a.sort - b.sort)
+            .slice(0, 50)
+            .map((item: any) => ({ ...item, sort: undefined }));
+
+          setNotes(shuffled);
+        } else {
+          setNotes(data);
+        }
+      });
   }, []);
 
   // Fetches favorite dreams / favorite dream ids
@@ -72,6 +91,26 @@ export default function Feed() {
       setFavoriteIds(new Set(updated.map(f => f.id)));
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function handleDelete(noteId: string ) {
+    try {
+      const res = await fetch(`/api/notes`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: noteId }),
+      });
+
+      if (res.ok) {
+        console.log("Note deleted successfully");
+        setNotes((prev) => prev.filter((note) => note.id !== noteId));
+        setSelectedNote(null);
+      } else {
+        console.error("Failed to delete note");
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
     }
   }
 
@@ -228,6 +267,7 @@ export default function Feed() {
                   author={selectedNote.user?.username}
                   isFavorited={favoriteIds.has(selectedNote.id)}
                   onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
+                  handleDelete={() => handleDelete(selectedNote.id)}
                   canFavorite={favoriteIds.size < 1}
                 />
               )}
