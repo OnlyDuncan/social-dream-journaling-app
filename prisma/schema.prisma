@@ -16,6 +16,8 @@ model User {
   favoriteNotes    Note[]          @relation("Favorites")
   friends          Friend[]        @relation("UserFriends_user")
   friendedBy       Friend[]        @relation("UserFriends_friend")
+  description      String?         @db.Text
+  profilePicture   String?         @db.Text
 }
 
 model Note {

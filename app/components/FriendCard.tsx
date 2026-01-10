@@ -2,13 +2,16 @@
 
 import { Box, Link } from "@mui/material";
 import AvatarPlaceholder from "./AvatarPlaceholder";
+import { CldImage } from 'next-cloudinary';
 
 type FriendCardProps = {
     username: string;
+    profilePicture?: string;
 };
 
 export default function FriendCard({ 
     username,
+    profilePicture
 }: FriendCardProps) {
 
     return (
@@ -25,7 +28,15 @@ export default function FriendCard({
                     borderRadius: 2,
                 }}
             >
-                <AvatarPlaceholder size={48} className="mb-2" />
+                {/* <AvatarPlaceholder size={48} className="mb-2" /> */}
+                <CldImage
+                    src={profilePicture || "/default-avatar.png"}
+                    alt={`${username}'s profile picture` || "Unknown"}
+                    width={40}
+                    height={40}
+                    crop="fill"
+                    className="rounded-full"
+                />
                 <h2 className="text-xl font-semibold"> {username || "Unknown"}</h2>
             </Box>
         </Link>

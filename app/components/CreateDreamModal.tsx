@@ -52,8 +52,8 @@ export default function CreateDreamModal({
         }
     }, [isOpen]);
 
-    const canCreatePublic = publicCount < 1;
-    const canCreatePrivate = privateCount < 1;
+    const canCreatePublic = publicCount < 50;
+    const canCreatePrivate = privateCount < 50;
 
     if (!canCreatePublic) {
         setLimitType('50 public');
@@ -64,7 +64,15 @@ export default function CreateDreamModal({
     }
 
     async function handleCreateDream() {
-        const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+        if (!title.trim() || !content.trim()) {
+            alert("Please enter a title and content.");
+            return
+        }
+        
+        const tagsArray = tags
+            .split(',')
+            .map(t => t.trim())
+            .filter(Boolean);
         
         if (isPrivate && privateCount >= 45) {
             alert(`You are approaching the limit for private dreams (${privateCount}/50). Please consider removing some dreams before creating more.`)

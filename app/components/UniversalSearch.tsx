@@ -403,7 +403,7 @@ export default function UniversalSearch({
           author={selectedNote.user?.username}
           isFavorited={favoriteIds.has(selectedNote.id)}
           onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
-          canFavorite={favoriteIds.size < 1}
+          canFavorite={favoriteIds.size < 50}
           handleDelete={() => handleDelete(selectedNote.id)}
         />
       )}

@@ -1,11 +1,5 @@
 "use client";
 
-// Maybe add some arrows to go left and right through the array when in modal form
-// Make page reload after accepting or rejecting a friend request or make button label update
-// When user sends request to other user and reloads page, it doesn't say Request Sent anymore
-// User not added to database until they make a post or favorite something
-// Favoriting dreams does not seem to be working anymore
-
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
@@ -17,6 +11,7 @@ import FriendRequestCard from "../../components/FriendRequestCard";
 import FriendCard from "../../components/FriendCard";
 import CreateDreamModal from "../../components/CreateDreamModal";
 import AvatarPlaceholder from "../../components/AvatarPlaceholder";
+import ProfilePictureUpload from "../../components/ProfilePictureUpload";
 
 type Tag = {
   id: string;
@@ -46,6 +41,7 @@ type FriendRequest = {
 type Friend = {
   id: string;
   username: string;
+  profilePicture?: string;
 }
 
 export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { user: any; isOwnProfile: boolean, profileUserId: string }) {
@@ -64,8 +60,12 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
-  // const [limitType, setLimitType] = useState<'favorites' | 'public' | 'private' | null>(null);
-  // const [warningType, setWarningType] = useState<'warning' | 'limit' | null>(null);
+  const [description, setDescription] = useState<string | ''>(
+    user?.description || ''
+  );
+  const [profilePicture, setProfilePicture] = useState<string | null>(
+    user?.profilePicture || null
+  );
 
   let buttonLabel = "Add Friend";
   let disabled = false;
@@ -113,41 +113,47 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
 
   // If favoriteIds size reaches 50, show warning
   useEffect(() => {
-    if (favoriteIds.size >= 1) {
+    if (favoriteIds.size >= 50) 
+    {
       setShowLimitWarning(true);
     }
   }, [favoriteIds]);
 
-  // useEffect(() => {
-  //   if (notes.filter(note => !note.isPrivate).length >= 45 && notes.filter(note => !note.isPrivate).length < 50) {
-  //     setShowLimitWarning(true);
-  //     setLimitType('public');
-  //     setWarningType('warning');
-  //   }
+ // Fetches profile picture of the user
+useEffect(() => {
+  console.log('Profile picture useEffect triggered with profileUserId:', profileUserId);
+  
+  if (!profileUserId) {
+    console.log('No profileUserId, skipping profile picture fetch');
+    return;
+  }
 
-  //   if (notes.filter(note => !note.isPrivate).length >= 50) {
-  //     setShowLimitWarning(true);
-  //     setLimitType('public');
-  //     setWarningType('limit');
-  //   }
+  async function fetchProfileData() {
+    try {
+      console.log('Fetching profile data for user:', profileUserId);
+      const res = await fetch(`/api/user/profile?userId=${profileUserId}`);
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Profile picture data received:', data);
+        setProfilePicture(data.profilePicture || null);
+        setDescription(data.description || '');
+      } else {
+        console.error('Failed to fetch profile picture:', res.status);
+        setProfilePicture(null);
+      }
+    } catch (error) {
+      console.error('Error fetching profile picture:', error);
+      setProfilePicture(null);
+    }
+  }
 
-  //   if (notes.filter(note => note.isPrivate).length >= 45 && notes.filter(note => note.isPrivate).length < 50) {
-  //     setShowLimitWarning(true);
-  //     setLimitType('private');
-  //     setWarningType('warning');
-  //   }
-
-  //   if (notes.filter(note => note.isPrivate).length >= 50) {
-  //     setShowLimitWarning(true);
-  //     setLimitType('private');
-  //     setWarningType('limit');
-  //   }
-  // }, [notes]);
+  fetchProfileData();
+}, [profileUserId]);
 
   // Fetches dreams of the profile page user is on
   useEffect(() => {
     if (!profileUserId) return;
-    console.log("Profile User ID:", profileUserId);
 
     async function fetchProfileNotes() {
       const res = await fetch(`/api/notes?userId=${profileUserId}`);
@@ -174,6 +180,55 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
       }
     }
   }
+
+
+  async function removeFriend (friendId: string) {
+    
+    try {
+      const response = await fetch('/api/friends/remove', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendId }),
+      });
+
+      console.log("🚀 FRONTEND: Response received, status:", response.status);
+      console.log("🚀 FRONTEND: Response ok:", response.ok);
+      const data= await response.json();
+      console.log('🚀 FRONTEND: Remove friend response:', data);
+
+      if (response.ok) {
+        console.log("Friend removed successfully");
+        setFriends((prev) => {
+          const filtered = prev.filter((friend) => friend.id !== loggedInUserId);
+          return filtered;
+        });
+      } else {
+        console.error("Error removing friend:", data);
+      }
+    } catch (error) {
+      console.error("❌ FRONTEND: Error removing friend:", error);
+      alert("An error occurred while removing friend");
+    }
+  }
+
+  async function handleProfileUpdate(imageUrl: string, description: string) {
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profilePicture: imageUrl, description }),
+      });
+
+      if (res.ok) {
+        setProfilePicture(imageUrl);
+        setDescription(description);
+      } else {
+        const errorData = await res.json();
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
 
   // Fetches favorite dreams when on own profile
   useEffect(() => {
@@ -213,7 +268,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     try {
       console.log("Toggling favorite for note:", noteId, "Currently favorited:", currentlyFavorited);
       
-      if (!currentlyFavorited && favoriteIds.size >= 1) {
+      if (!currentlyFavorited && favoriteIds.size >= 50) {
         // setShowLimitWarning(true);
         // setLimitType('favorites');
         // setWarningType('limit');
@@ -456,7 +511,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                                       isFavorited={favoriteIds.has(note.id)}
                                       onToggleFavorite={() => toggleFavorite(note.id, favoriteIds.has(note.id))}
                                       onOpen={() => setSelectedNote(note)}
-                                      canFavorite={favoriteIds.size < 1}
+                                      canFavorite={favoriteIds.size < 50}
                                     />
                                   ))}
                                 </Box>
@@ -470,11 +525,34 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                       <Box sx={{ backgroundColor: "#C9FFFF", height: "100%", borderRadius: 5, p: 2 }}>
                         <Box sx={{ display: "flex", flexDirection: "column" }}>
                           <Typography className="text-2xl font-bold mb-4" sx={{ mx: "auto" }}>{isOwnProfile ? "My Profile" : `${user.username}`}</Typography>
-                          <AvatarPlaceholder size={96} className="mb-2 mx-auto" />
-                          <Box sx={{ height: 60, mb: 2, backgroundColor: "#E0E0E0", borderRadius: 2 }} >
-                            <p className="p-2 text-gray-700 italic">
-                              Description Placeholder
-                            </p>
+                          {/* <AvatarPlaceholder size={96} className="mb-2 mx-auto" /> */}
+                          <ProfilePictureUpload
+                            currentImageUrl={profilePicture}
+                            onImageUpdate={handleProfileUpdate}
+                            isOwnProfile={isOwnProfile}
+                          />
+                          <Box sx={{ height: 60, mb: 2, backgroundColor: "#E0E0E0", borderRadius: 2 }}>
+                            {isOwnProfile ? (
+                              <>
+                                <textarea
+                                  value={description}
+                                  onChange={(e) => setDescription(e.target.value)}
+                                  className="w-full p-2 border border-gray-300 rounded-lg"
+                                  rows={2}
+                                  placeholder="Tell us about yourself..."
+                                />
+                                <button
+                                  onClick={() => handleProfileUpdate(profilePicture ?? '', description)}
+                                  className="mt-2 px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700"
+                                >
+                                  Update
+                                </button>
+                              </>
+                            ) : (
+                              <Typography sx={{ p: 2, color: "#555555" }}>
+                                {description || "This user has not added a description yet."}
+                              </Typography>
+                            )}
                           </Box>
                         </Box>
                         <Box>
@@ -524,13 +602,18 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                           )}
 
                           {!isOwnProfile && (
-                            <button
-                              onClick={() => handleFriend()}
-                              disabled={disabled}
-                              className={`mb-4 px-4 py-2 rounded text-white ${ disabled ? "bg-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
-                            >
-                              {buttonLabel}
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleFriend()}
+                                disabled={disabled}
+                                className={`mb-4 px-4 py-2 rounded text-white ${ disabled ? "bg-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
+                              >
+                                {buttonLabel}
+                              </button>
+                              <button onClick={() => removeFriend(profileUserId)} className="mb-4 px-4 py-2 rounded text-white bg-red-600 hover:bg-red-700">
+                                Remove Friend
+                              </button>
+                            </>
                           )}
                         </Box>
                       </Box>
@@ -569,10 +652,12 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                             },
                           }}
                         >
-                          {friends.map(({ id, username }) => (
+                          {friends.map(({ id, username, profilePicture }) => (
+                            console.log("FriendCard Id:", id, "Username:", username),
                             <FriendCard 
                               key={id as string} 
-                              username={username as string} 
+                              username={username as string}
+                              profilePicture={profilePicture as string}
                             />
                           ))}
                         </Box>
@@ -601,7 +686,7 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
                     isFavorited={favoriteIds.has(selectedNote.id)}
                     onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
                     handleDelete={() => handleDelete(selectedNote.id)}
-                    canFavorite={favoriteIds.size < 1}
+                    canFavorite={favoriteIds.size < 50}
                   />
                 )}
               </div>

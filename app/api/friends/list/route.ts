@@ -20,14 +20,19 @@ export async function GET(req: NextRequest) {
       ],
     },
     include: {
-      from: { select: { id: true, username: true } },
-      to: { select: { id: true, username: true } },
+      from: { select: { id: true, username: true, profilePicture: true } },
+      to: { select: { id: true, username: true, profilePicture: true } },
     },
   });
 
-  const friends = accepted.map((req) =>
-    req.fromId === targetUserId ? req.to : req.from
-  );
+  const friends = accepted.map((req) => {
+    const friend = req.fromId === targetUserId ? req.to : req.from;
+    return {
+      id: friend.id,
+      username: friend.username,
+      profilePicture: friend.profilePicture,
+    };
+  });
 
   return NextResponse.json(friends);
 }

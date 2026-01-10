@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Find the request
     const request = await prisma.friendRequest.findUnique({
       where: { fromId_toId: { fromId, toId: userId } },
     });
@@ -20,26 +19,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No pending request found' }, { status: 404 });
     }
 
-    // Update request to accepted
     await prisma.friendRequest.update({
       where: { fromId_toId: { fromId, toId: userId } },
       data: { status: 'accepted' },
     });
-
-    await prisma.$transaction([
-      prisma.friend.create({
-      data: {
-        userId: userId,
-        friendId: fromId,
-      },
-      }),
-      prisma.friend.create({
-      data: {
-        userId: fromId,
-        friendId: userId,
-      },
-      }),
-    ]);
 
     return NextResponse.json({ message: 'Friend request accepted' });
   } catch (error) {

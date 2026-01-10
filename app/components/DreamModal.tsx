@@ -6,6 +6,8 @@ import FavoriteHeart from "./HeartButton";
 import DeleteButton from "./DeleteButton";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import jsPDF from 'jspdf';
+import DownloadButton from "./DownloadButton";
 
 type DreamModalProps = {
     isOpen: boolean;
@@ -13,7 +15,7 @@ type DreamModalProps = {
     title: string;
     content: string;
     tags: string[];
-    author?: string;
+    author: string;
     isFavorited?: boolean;
     onToggleFavorite: () => void;
     handleDelete: () => void;
@@ -41,6 +43,27 @@ export default function DreamModal({
     const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
     const isAuthor = user?.username === author;
+
+    const downloadDreamAsPDF = async (title: string, content: string, tags: string[], author: string) => {
+        const pdf = new jsPDF();
+
+        // Title
+        pdf.setFontSize(20);
+        pdf.text(title, 20, 30);
+
+        // Content (with word wrapping)
+        pdf.setFontSize(12);
+        const splitContent = pdf.splitTextToSize(content, 170);
+        pdf.text(splitContent, 20, 50);
+
+        // Tags and metadata
+        const yPos = 50 + (splitContent.length * 5) + 20;
+        pdf.setFontSize(10);
+        pdf.text(`Tags: ${tags.join(`, `)}`, 20, yPos);
+        pdf.text(`Author: ${author}`, 20, yPos + 10);
+
+        pdf.save(`${title.replace(/[^a-z0-9]/gi, `_`).toLowerCase()}.pdf`);
+    };
 
     useEffect(() => {
         (async () => {
@@ -73,6 +96,10 @@ export default function DreamModal({
                             isFavorited={isFavorited}
                             canFavorite={canFavorite}
                             onToggle={onToggleFavorite}
+                            static={true}
+                        />
+                        <DownloadButton
+                            download={() => downloadDreamAsPDF(title, content, tags, author)}
                             static={true}
                         />
                         {isAuthor && (

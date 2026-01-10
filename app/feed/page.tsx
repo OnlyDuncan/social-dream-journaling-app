@@ -34,33 +34,33 @@ export default function Feed() {
   const [showCreate, setShowCreate] = useState(false);
   const [hasSearchResults, setHasSearchResults] = useState(false);
   const [searchResults, setSearchResults] = useState<Note[]>([]);
-  const [showLimitWarning, setShowLimitWarning] = useState(true);
+  const [showLimitWarning, setShowLimitWarning] = useState(false);
 
   // Fetches feed
-  // useEffect(() => {
-  //   fetch('/api/feed')
-  //     .then(r => r.json())
-  //     .then(d => setNotes(d));
-  // }, []);
-
-  // For testing
   useEffect(() => {
     fetch('/api/feed')
       .then(r => r.json())
-      .then(data => {
-        if (data.length > 50) {
-          const shuffled = data
-            .map((item: Note) => ({ ...item, sort: Math.random() }))
-            .sort((a: any, b: any) => a.sort - b.sort)
-            .slice(0, 50)
-            .map((item: any) => ({ ...item, sort: undefined }));
-
-          setNotes(shuffled);
-        } else {
-          setNotes(data);
-        }
-      });
+      .then(d => setNotes(d));
   }, []);
+
+  // For testing
+  // useEffect(() => {
+  //   fetch('/api/feed')
+  //     .then(r => r.json())
+  //     .then(data => {
+  //       if (data.length > 50) {
+  //         const shuffled = data
+  //           .map((item: Note) => ({ ...item, sort: Math.random() }))
+  //           .sort((a: any, b: any) => a.sort - b.sort)
+  //           .slice(0, 50)
+  //           .map((item: any) => ({ ...item, sort: undefined }));
+
+  //         setNotes(shuffled);
+  //       } else {
+  //         setNotes(data);
+  //       }
+  //     });
+  // }, []);
 
   // Fetches favorite dreams / favorite dream ids
   useEffect(() => {
@@ -268,7 +268,7 @@ export default function Feed() {
                   isFavorited={favoriteIds.has(selectedNote.id)}
                   onToggleFavorite={() => toggleFavorite(selectedNote.id, favoriteIds.has(selectedNote.id))}
                   handleDelete={() => handleDelete(selectedNote.id)}
-                  canFavorite={favoriteIds.size < 1}
+                  canFavorite={favoriteIds.size < 50}
                 />
               )}
 
