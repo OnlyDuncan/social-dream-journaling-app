@@ -236,9 +236,7 @@ export default function DreamCard({
                 <div style={{ flexShrink: 0, marginBottom: "12px" }}>
                     <h3 className="font-bold mb-1 text-center text-sm leading-tight">{dream.title}</h3>
                     <Typography className="text-xs text-gray-600 text-center">
-                        <Link href={`/profile/${dream.user}`}>
-                            By {dream.user?.username || "Unknown"}
-                        </Link>
+                        By {dream.user?.username || "Unknown"}
                     </Typography>
                 </div>
 

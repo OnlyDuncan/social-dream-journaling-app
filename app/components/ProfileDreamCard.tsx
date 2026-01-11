@@ -158,9 +158,7 @@ export default function ProfileDreamCard({
             >
                 <h3 className="font-bold mb-1">{dream.title}</h3>
                 <Typography className="text-xs text-gray-600 mb-2">
-                    <Link href={`/profile/${dream.user}`}>
-                        By {dream.user?.username || "Unknown"}
-                    </Link>
+                    By {dream.user?.username || "Unknown"}
                 </Typography>
                 <div className="prose prose-sm max-w-none flex-1 overflow-auto mb-2">
                     <ReactMarkdown>{preview}</ReactMarkdown>

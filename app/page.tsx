@@ -1,11 +1,35 @@
 "use client";
 
 import { SignedIn, SignedOut, SignOutButton, SignInButton } from "@clerk/nextjs";
+import { useEffect } from "react";
 import Link from "next/link";
 import React from "react";
 import { Box, } from "@mui/material";
+import { useAuth } from "@clerk/nextjs";
 
 export default function HomePage() {
+
+  const { userId: loggedInUserId } = useAuth();
+
+  // Add this useEffect in your ProfileClient or a higher-level component
+  useEffect(() => {
+    const ensureUserExists = async () => {
+      if (loggedInUserId) {
+        try {
+          await fetch('/api/user/ensure-exists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: loggedInUserId }),
+          });
+        } catch (error) {
+          console.error('Error ensuring user exists:', error);
+        }
+      }
+    };
+    
+    ensureUserExists();
+  }, [loggedInUserId]);
+
   return (
     <main className="">
       <Box

@@ -7,6 +7,7 @@
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
 import { useState, useEffect, useMemo } from "react";
 import { Box, Typography } from "@mui/material";
 import DreamModal from "../components/DreamModal";
@@ -28,6 +29,7 @@ type Note = {
 type Favorite = Note;
 
 export default function Feed() {
+  const { userId: loggedInUserId } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -36,31 +38,30 @@ export default function Feed() {
   const [searchResults, setSearchResults] = useState<Note[]>([]);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
 
+  useEffect(() => {
+    const ensureUserExists = async () => {
+      if (loggedInUserId) {
+        try {
+          await fetch('/api/user/ensure-exists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: loggedInUserId }),
+          });
+        } catch (error) {
+          console.error('Error ensuring user exists:', error);
+        }
+      }
+    };
+    
+    ensureUserExists();
+  }, [loggedInUserId]);
+
   // Fetches feed
   useEffect(() => {
     fetch('/api/feed')
       .then(r => r.json())
       .then(d => setNotes(d));
   }, []);
-
-  // For testing
-  // useEffect(() => {
-  //   fetch('/api/feed')
-  //     .then(r => r.json())
-  //     .then(data => {
-  //       if (data.length > 50) {
-  //         const shuffled = data
-  //           .map((item: Note) => ({ ...item, sort: Math.random() }))
-  //           .sort((a: any, b: any) => a.sort - b.sort)
-  //           .slice(0, 50)
-  //           .map((item: any) => ({ ...item, sort: undefined }));
-
-  //         setNotes(shuffled);
-  //       } else {
-  //         setNotes(data);
-  //       }
-  //     });
-  // }, []);
 
   // Fetches favorite dreams / favorite dream ids
   useEffect(() => {

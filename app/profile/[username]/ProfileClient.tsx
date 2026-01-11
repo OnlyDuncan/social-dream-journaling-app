@@ -10,7 +10,6 @@ import ProfileDreamCard from "../../components/ProfileDreamCard";
 import FriendRequestCard from "../../components/FriendRequestCard";
 import FriendCard from "../../components/FriendCard";
 import CreateDreamModal from "../../components/CreateDreamModal";
-import AvatarPlaceholder from "../../components/AvatarPlaceholder";
 import ProfilePictureUpload from "../../components/ProfilePictureUpload";
 
 type Tag = {
@@ -119,37 +118,70 @@ export default function ProfileClient({ user, isOwnProfile, profileUserId, }: { 
     }
   }, [favoriteIds]);
 
- // Fetches profile picture of the user
-useEffect(() => {
-  console.log('Profile picture useEffect triggered with profileUserId:', profileUserId);
-  
-  if (!profileUserId) {
-    console.log('No profileUserId, skipping profile picture fetch');
-    return;
-  }
+  useEffect(() => {
+    const ensureUserExists = async () => {
+      if (loggedInUserId) {
+        try {
+          await fetch('/api/user/ensure-exists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: loggedInUserId }),
+          });
+        } catch (error) {
+          console.error('Error ensuring user exists:', error);
+        }
+      }
+    };
+    
+    ensureUserExists();
+  }, [loggedInUserId]);
 
-  async function fetchProfileData() {
-    try {
-      console.log('Fetching profile data for user:', profileUserId);
-      const res = await fetch(`/api/user/profile?userId=${profileUserId}`);
-      
+  // Fetches sent friend requests
+  useEffect(() => {
+    if (!loggedInUserId) return;
+
+    async function fetchSentRequests() {
+      const res = await fetch(`/api/friend-requests/sent?userId=${loggedInUserId}`);
       if (res.ok) {
         const data = await res.json();
-        console.log('Profile picture data received:', data);
-        setProfilePicture(data.profilePicture || null);
-        setDescription(data.description || '');
-      } else {
-        console.error('Failed to fetch profile picture:', res.status);
+        setSentRequests(data);
+      }
+    }
+
+    fetchSentRequests();
+  }, [loggedInUserId]);
+
+ // Fetches profile picture of the user
+  useEffect(() => {
+    console.log('Profile picture useEffect triggered with profileUserId:', profileUserId);
+    
+    if (!profileUserId) {
+      console.log('No profileUserId, skipping profile picture fetch');
+      return;
+    }
+
+    async function fetchProfileData() {
+      try {
+        console.log('Fetching profile data for user:', profileUserId);
+        const res = await fetch(`/api/user/profile?userId=${profileUserId}`);
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Profile picture data received:', data);
+          setProfilePicture(data.profilePicture || null);
+          setDescription(data.description || '');
+        } else {
+          console.error('Failed to fetch profile picture:', res.status);
+          setProfilePicture(null);
+        }
+      } catch (error) {
+        console.error('Error fetching profile picture:', error);
         setProfilePicture(null);
       }
-    } catch (error) {
-      console.error('Error fetching profile picture:', error);
-      setProfilePicture(null);
     }
-  }
 
-  fetchProfileData();
-}, [profileUserId]);
+    fetchProfileData();
+  }, [profileUserId]);
 
   // Fetches dreams of the profile page user is on
   useEffect(() => {
@@ -365,7 +397,8 @@ useEffect(() => {
 
     if (res.ok) {
       setReceivedRequests(prev => prev.filter(r => r.id !== requestId));
-      setFriends(prev => [...prev, { id: fromId, username: "Unknown" }])
+      const acceptedRequest = receivedRequests.find(r => r.id === requestId);
+      setFriends(prev => [...prev, { id: fromId, username: acceptedRequest?.from?.username || "Unknown" }]);
     }
   }
 
@@ -525,7 +558,6 @@ useEffect(() => {
                       <Box sx={{ backgroundColor: "#C9FFFF", height: "100%", borderRadius: 5, p: 2 }}>
                         <Box sx={{ display: "flex", flexDirection: "column" }}>
                           <Typography className="text-2xl font-bold mb-4" sx={{ mx: "auto" }}>{isOwnProfile ? "My Profile" : `${user.username}`}</Typography>
-                          {/* <AvatarPlaceholder size={96} className="mb-2 mx-auto" /> */}
                           <ProfilePictureUpload
                             currentImageUrl={profilePicture}
                             onImageUpdate={handleProfileUpdate}
@@ -601,7 +633,7 @@ useEffect(() => {
                             </div>
                           )}
 
-                          {!isOwnProfile && (
+                          {!isOwnProfile && !isFriend &&(
                             <>
                               <button
                                 onClick={() => handleFriend()}

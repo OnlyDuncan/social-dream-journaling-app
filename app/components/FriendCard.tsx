@@ -28,15 +28,18 @@ export default function FriendCard({
                     borderRadius: 2,
                 }}
             >
-                {/* <AvatarPlaceholder size={48} className="mb-2" /> */}
-                <CldImage
-                    src={profilePicture || "/default-avatar.png"}
-                    alt={`${username}'s profile picture` || "Unknown"}
-                    width={40}
-                    height={40}
-                    crop="fill"
-                    className="rounded-full"
-                />
+                {profilePicture ? (
+                    <CldImage
+                        src={profilePicture || "/default-avatar.png"}
+                        alt={`${username}'s profile picture` || "Unknown"}
+                        width={40}
+                        height={40}
+                        crop="fill"
+                        className="rounded-full"
+                    />
+                ) : (
+                    <AvatarPlaceholder size={40} className="rounded-full mb-2" />
+                )}
                 <h2 className="text-xl font-semibold"> {username || "Unknown"}</h2>
             </Box>
         </Link>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CldImage } from 'next-cloudinary';
+import AvatarPlaceholder from './AvatarPlaceholder';
 
 interface ProfilePictureUploadProps {
     currentImageUrl?: string | null;
@@ -91,11 +92,7 @@ export default function ProfilePictureUpload({
                         className="object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                        </svg>
-                    </div>
+                    <AvatarPlaceholder size={128} className="mb-2 mx-auto" />
                 )}
             </div>
             
